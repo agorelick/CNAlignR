@@ -13,7 +13,7 @@ save_preprocessed_lowpass_data_for_ascat <- function(d, normal_sample, sex, tmpd
     d$Chromosome <- factor(d$Chromosome, levels=valid_chr)
     tumor_samples <- unique(d[sample!=normal_sample,(sample)])
 
-    message('Saving preprocessed data from lpASCN for input to ASCAT.')
+    message('Saving preprocessed lowpass data for input to ASCAT.')
     t_LogR <- data.table::dcast(Chromosome + Position ~ sample, data=d[sample %in% tumor_samples], value.var='LogR')
     t_LogR <- t_LogR[order(Chromosome, Position),]
     n_LogR <- dcast(Chromosome + Position ~ sample, data=d[sample %in% normal_sample,], value.var='LogR')
