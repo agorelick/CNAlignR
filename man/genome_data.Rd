@@ -2,12 +2,10 @@
 % Please edit documentation in R/genome_data.R
 \name{genome_data}
 \alias{genome_data}
-\title{genome_data
-load internal data for b37 or hg38 and return formatted data useful making genome plots and analyses}
+\title{genome_data}
 \usage{
 genome_data(build)
 }
 \description{
-genome_data
-load internal data for b37 or hg38 and return formatted data useful making genome plots and analyses
+Load internal data for b37 or hg38 and return formatted data useful making genome plots and analyses
 }

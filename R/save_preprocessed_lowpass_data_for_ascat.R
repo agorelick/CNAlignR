@@ -1,5 +1,7 @@
 ##' save_preprocessed_lowpass_data_for_ascat
+##'
 ##' Write preprocessed lowpass data into the format expected for ascat.loadData()
+##'
 ##' @export
 save_preprocessed_lowpass_data_for_ascat <- function(d, normal_sample, sex, tmpdir='.') { 
     require(ASCAT)

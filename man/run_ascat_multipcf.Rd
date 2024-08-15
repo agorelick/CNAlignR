@@ -2,8 +2,7 @@
 % Please edit documentation in R/run_ascat_multipcf.R
 \name{run_ascat_multipcf}
 \alias{run_ascat_multipcf}
-\title{run_ascat_multipcf
-Run ascat.asmultipcf to do multi-sample segmentation, returns appended data objected.}
+\title{run_ascat_multipcf}
 \usage{
 run_ascat_multipcf(
   obj,
@@ -16,6 +15,5 @@ run_ascat_multipcf(
 )
 }
 \description{
-run_ascat_multipcf
 Run ascat.asmultipcf to do multi-sample segmentation, returns appended data objected.
 }

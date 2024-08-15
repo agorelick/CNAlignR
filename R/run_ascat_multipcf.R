@@ -1,5 +1,7 @@
 ##' run_ascat_multipcf
+##'
 ##' Run ascat.asmultipcf to do multi-sample segmentation, returns appended data objected.
+##'
 ##' @export
 run_ascat_multipcf <- function(obj, penalty=70, seed=as.integer(Sys.time()), refine=T, selectAlg="exact", overwrite_mpcf=F, build='hg19') {
     chr_levels <- c(1:22,'X','Y')

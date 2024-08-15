@@ -1,5 +1,9 @@
-prep_data_for_multipcf <-
-function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file, sex, genomeVersion, GCcontentfile=NULL, replictimingfile=NULL, build='hg19') {
+##' prep_data_for_multipcf
+##' 
+##' Run ascat.loadData and format a data-object for use with ascat.asmultipcf
+##'
+##' @export
+prep_data_for_multipcf <- function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file, sex, build, GCcontentfile=NULL, replictimingfile=NULL) {
 
     require(ASCAT)
     n_LogR <- fread(Germline_LogR_file)
@@ -19,7 +23,7 @@ function(Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file,
                               Germline_BAF_file = Germline_BAF_file,
                               gender = gender, 
                               genomeVersion = build) 
-    ascat.loadData.params <- list(Tumor_LogR_file=Tumor_LogR_file, Tumor_BAF_file=Tumor_BAF_file, Germline_LogR_file=Germline_LogR_file, Germline_BAF_file=Germline_BAF_file, sex=sex, genomeVersion=genomeVersion, gender = unique(gender), genomeVersion = build)
+    ascat.loadData.params <- list(Tumor_LogR_file=Tumor_LogR_file, Tumor_BAF_file=Tumor_BAF_file, Germline_LogR_file=Germline_LogR_file, Germline_BAF_file=Germline_BAF_file, sex=sex, gender = unique(gender), genomeVersion = build)
    
     ## get list of tumor samples and (single) normal sample used throughout the pipeline
     tumor_samples <- names(ascat.bc$Tumor_LogR)

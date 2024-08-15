@@ -2,12 +2,10 @@
 % Please edit documentation in R/save_preprocessed_lowpass_data_for_ascat.R
 \name{save_preprocessed_lowpass_data_for_ascat}
 \alias{save_preprocessed_lowpass_data_for_ascat}
-\title{save_preprocessed_lowpass_data_for_ascat
-Write preprocessed lowpass data into the format expected for ascat.loadData()}
+\title{save_preprocessed_lowpass_data_for_ascat}
 \usage{
 save_preprocessed_lowpass_data_for_ascat(d, normal_sample, sex, tmpdir = ".")
 }
 \description{
-save_preprocessed_lowpass_data_for_ascat
 Write preprocessed lowpass data into the format expected for ascat.loadData()
 }

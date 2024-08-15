@@ -1,5 +1,7 @@
 ##' genome_data
-##' load internal data for b37 or hg38 and return formatted data useful making genome plots and analyses
+##'
+##' Load internal data for b37 or hg38 and return formatted data useful making genome plots and analyses
+##'
 ##' @export
 genome_data <- function(build) { 
     if(build=='hg19') {
