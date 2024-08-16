@@ -1,7 +1,7 @@
 ##' preprocess_lowpass_data
 ##' Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, sex, build='hg19', max_phaseable_distance=20000, min_block_reads=10, seed=NA, normal_sample, min_tumors_for_imputing=NA, blacklisted_regions_file=NA) {
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, sex, build, max_phaseable_distance=20000, min_block_reads=10, seed=NA, normal_sample, min_tumors_for_imputing=NA, blacklisted_regions_file=NA) {
 
     if(!is.na(seed)) set.seed(seed)
 
@@ -136,6 +136,28 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     block_counts <- merge(block_counts1, block_counts2, by=c('bin','block'), all=T)
     block_counts[is.na(block_counts)] <- 0
 
+    x_samples <- paste0(samples,'.x')
+    y_samples <- paste0(samples,'.y')
+    x_counts <- block_counts[,c('bin','block',x_samples),with=F]
+    y_counts <- block_counts[,c('bin','block',y_samples),with=F]
+    x_counts <- data.table::melt(x_counts, id.vars=c('bin','block'))
+    x_counts[,variable:=gsub('[.]x$','',as.character(variable))]
+    y_counts <- data.table::melt(y_counts, id.vars=c('bin','block'))
+    y_counts[,variable:=gsub('[.]y$','',as.character(variable))]
+    block_counts_long <- merge(x_counts, y_counts, by=c('bin','block','variable'))
+    block_counts_long[,total:=value.x+value.y]
+    
+    #get_representative_block_per_sample <- function(block_counts_long) {
+    #    block_counts_long <- block_counts_long[order(total, decreasing=T),]
+    #    block_counts_long[1,] 
+    #}
+    #collapsed_bin_counts <- block_counts_long[,get_representative_block_per_sample(.SD),by=c('bin','variable')]
+    #collapsed_bin_counts.x <- data.table::dcast(bin ~ variable, value.var='value.x', data=collapsed_bin_counts)
+    #collapsed_bin_counts.y <- data.table::dcast(bin ~ variable, value.var='value.y', data=collapsed_bin_counts)
+    #collapsed_bin_counts <- merge(collapsed_bin_counts.x, collapsed_bin_counts.y, by='bin', all=T)
+
+
+    if(T) {
     ## test each block within a bin for significant allelic imbalance.
     ## If any do, we assume there is the same allelic imbalance across all the blocks.
     ## In this case, we will swap .x and .y labels for the other blocks so that their combined BAFs have the same direction.
@@ -187,9 +209,9 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     realigned_block_counts <- block_counts[,reorient_blocks(.SD, x_samples, y_samples),by=block]
     new_x_counts <- realigned_block_counts[,(x_samples),with=F]
     new_y_counts <- realigned_block_counts[,(y_samples),with=F]
-    realigned_block_counts$realigned_block_lfc <- log2(rowSums(new_y_counts) / rowSums(new_x_counts))
+    realigned_block_counts$block_lfc <- log2(rowSums(new_y_counts) / rowSums(new_x_counts))
 
-    ## collapse to bin-level data. For now, just combine the .x and .y read counts across all blocks regardless of bin-level significance
+    ## for realigned blocks, collapse to bin-level data
     collapse_bins <- function(realigned_block_counts, x_samples, y_samples) {
         out <- realigned_block_counts[1,c('bin_p','bin_q','bin_lfc'),with=F]
         current_x_counts <- realigned_block_counts[,(x_samples),with=F]
@@ -200,6 +222,8 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
         out
     }
     collapsed_bin_counts <- realigned_block_counts[,collapse_bins(.SD, x_samples, y_samples),by=bin]
+    }
+
 
     ## get dp_matrix
     tumors.x <- paste0(tumor_samples,'.x')
@@ -216,8 +240,8 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     baf_matrix <- collapsed_bin_counts[,c(samples.y),with=F] / dp_matrix
     baf_matrix[dp_matrix < min_block_reads] <- NA
     colnames(baf_matrix) <- samples
-    res <- cbind(collapsed_bin_counts[,c('bin','bin_p','bin_q','dp'),with=F], baf_matrix) 
-    resM <- melt(res, id.vars=c('bin','bin_p','bin_q','dp'))
+    res <- cbind(collapsed_bin_counts[,c('bin','dp'),with=F], baf_matrix) 
+    resM <- melt(res, id.vars=c('bin','dp'))
     setnames(resM,c('variable','value'),c('sample','baf'))
 
     ## combine collapsed bin bafs with the count data
@@ -271,5 +295,6 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     d[,c('start','end','arm_start','arm_end'):=NULL]
     d[,charm:=paste0(Chromosome,arm)]
     message('Done!')
+
     d
 }
