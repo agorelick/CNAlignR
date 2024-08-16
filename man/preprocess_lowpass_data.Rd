@@ -11,13 +11,13 @@ preprocess_lowpass_data(
   phased_bcf,
   sample_map,
   sex,
-  build = "hg19",
+  build,
   max_phaseable_distance = 20000,
-  min_block_reads = 10,
+  min_bin_reads_for_baf = 10,
   seed = NA,
   normal_sample,
-  min_tumors_for_imputing = NA,
-  blacklisted_regions_file = NA
+  blacklisted_regions_file = NA,
+  smooth_LogR = T
 )
 }
 \description{

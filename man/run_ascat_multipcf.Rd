@@ -6,12 +6,12 @@
 \usage{
 run_ascat_multipcf(
   obj,
+  build,
   penalty = 70,
   seed = as.integer(Sys.time()),
   refine = T,
   selectAlg = "exact",
-  overwrite_mpcf = F,
-  build = "hg19"
+  overwrite_mpcf = F
 )
 }
 \description{

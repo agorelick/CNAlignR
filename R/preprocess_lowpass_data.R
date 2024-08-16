@@ -1,7 +1,8 @@
+
 ##' preprocess_lowpass_data
 ##' Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, sex, build, max_phaseable_distance=20000, min_block_reads=10, seed=NA, normal_sample, min_tumors_for_imputing=NA, blacklisted_regions_file=NA) {
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, seed=NA, normal_sample, blacklisted_regions_file=NA, smooth_LogR=T) {
 
     if(!is.na(seed)) set.seed(seed)
 
@@ -147,6 +148,7 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     block_counts_long <- merge(x_counts, y_counts, by=c('bin','block','variable'))
     block_counts_long[,total:=value.x+value.y]
     
+
     #get_representative_block_per_sample <- function(block_counts_long) {
     #    block_counts_long <- block_counts_long[order(total, decreasing=T),]
     #    block_counts_long[1,] 
@@ -156,8 +158,6 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     #collapsed_bin_counts.y <- data.table::dcast(bin ~ variable, value.var='value.y', data=collapsed_bin_counts)
     #collapsed_bin_counts <- merge(collapsed_bin_counts.x, collapsed_bin_counts.y, by='bin', all=T)
 
-
-    if(T) {
     ## test each block within a bin for significant allelic imbalance.
     ## If any do, we assume there is the same allelic imbalance across all the blocks.
     ## In this case, we will swap .x and .y labels for the other blocks so that their combined BAFs have the same direction.
@@ -181,8 +181,6 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
         block_summary[1,c('p','q','lfc','problematic')]
     }
     block_summary <- block_summary[,correct_blocks(.SD),by=bin]
-    block_summary[problematic==T,lfc:=NaN]
-    block_summary[problematic==T,q:=NaN]
 
     ## in every bin with a significant block, annotate its q-val and LFC (NB: LFC > 0 means .y > .x)
     setnames(block_summary,c('p','q','lfc'),c('bin_p','bin_q','bin_lfc'))
@@ -192,8 +190,6 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     x_counts <- block_counts[,(x_samples),with=F]
     y_counts <- block_counts[,(y_samples),with=F]
     block_counts$block_lfc <- log2(rowSums(y_counts) / rowSums(x_counts))
-    block_counts[is.nan(bin_lfc), bin_lfc:=NA]
-    block_counts[is.nan(block_lfc), block_lfc:=NA]
 
     ## reorient blocks so that their x,y orientations match that of the most-significant block in each bin 
     reorient_blocks <- function(current_block_counts, x_samples, y_samples) {
@@ -222,63 +218,36 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
         out
     }
     collapsed_bin_counts <- realigned_block_counts[,collapse_bins(.SD, x_samples, y_samples),by=bin]
-    }
 
-
-    ## get dp_matrix
+    ## get BAFs for each bin/sample based on x,y counts
     tumors.x <- paste0(tumor_samples,'.x')
     tumors.y <- paste0(tumor_samples,'.y')
     normal.x <- paste0(normal_sample,'.x')
     normal.y <- paste0(normal_sample,'.y')
     samples.x <- paste0(samples,'.x')
     samples.y <- paste0(samples,'.y')
-    dp_matrix <- collapsed_bin_counts[,c(samples.x),with=F] + collapsed_bin_counts[,c(samples.y),with=F]
-    colnames(dp_matrix) <- samples.y
-    collapsed_bin_counts$dp=rowSums(dp_matrix)
-
-    ## calculate BAF among bins with at least 10 reads in that sample
-    baf_matrix <- collapsed_bin_counts[,c(samples.y),with=F] / dp_matrix
-    baf_matrix[dp_matrix < min_block_reads] <- NA
-    colnames(baf_matrix) <- samples
-    res <- cbind(collapsed_bin_counts[,c('bin','dp'),with=F], baf_matrix) 
-    resM <- melt(res, id.vars=c('bin','dp'))
-    setnames(resM,c('variable','value'),c('sample','baf'))
+    
+    res.x <- melt(collapsed_bin_counts[,c('bin','bin_p','bin_q','bin_lfc',samples.x),with=F], id.vars=c('bin','bin_p','bin_q','bin_lfc'))
+    res.x[,variable:=gsub('[.]x','',as.character(variable))] 
+    setnames(res.x,'value','count.x')
+    res.y <- melt(collapsed_bin_counts[,c('bin',samples.y),with=F], id.vars=c('bin'))
+    res.y[,variable:=gsub('[.]y','',as.character(variable))] 
+    setnames(res.y,'value','count.y')
+    res <- merge(res.x, res.y, by=c('bin','variable'), all=T) 
+    res[,dp:=count.x+count.y]
+    setnames(res,'variable','sample')
+    res[,baf:=count.y/dp] 
 
     ## combine collapsed bin bafs with the count data
-    d <- merge(cnt, resM, by=c('sample','bin'), all.x=T)
+    d <- merge(cnt, res, by=c('sample','bin'), all.x=T)
     d <- d[order(chr,bin_start,bin_end),]
     d$bin <- factor(d$bin, levels=unique(d$bin)) 
+    d[dp < min_bin_reads_for_baf, baf:=NA]
     dN <- d[sample==normal_sample,c('bin','count')]
     setnames(dN,'count','n_count')
     d <- merge(d, dN, by=c('bin'), all.x=T)
-
-    ## calculate LogR
-    .get_LogR <- function(d) {
-        mid <- median(d$count[d$chr %in% c(1:22)],na.rm=T)
-        d$LogR <- log2(d$count / mid)
-        d
-    }
-    d <- d[,.get_LogR(.SD),by=sample]
-
-    d[is.nan(baf),baf:=NA]
-    d[!is.na(baf),count1:=count * baf]
-    d[!is.na(baf),count2:=count * (1-baf)]
-    d[is.na(baf), count1:=count]
-    d[is.na(baf), count2:=0]
-    d[is.na(baf),Ref:='.']
-    d[is.na(baf),Alt:='.']
-    d[!is.na(baf),Ref:='N']
-    d[!is.na(baf),Alt:='N']
     d[,position:=round((bin_start + bin_end - 1)/2)]
-    d <- d[,c('chr','position','Ref','Alt','sample','count1','count2','LogR'),with=F]
     d <- d[order(chr,position,sample),]
-
-    message('Adding LogR and BAF values for each bin ...')
-    d[,dp:=count1+count2]
-    d[Ref=='N', BAF:=count1 / dp]
-    d[BAF < 0 | BAF > 1, BAF:=NA]
-    d[,bin:=paste0(chr,':',position)]
-    d$bin <- as.integer(factor(d$bin, levels=unique(d$bin)))
 
     message('Adding chr-arms ...')
     arms <- genome_data(build)$arms
@@ -294,7 +263,51 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     d <- d[!is.na(arm),]
     d[,c('start','end','arm_start','arm_end'):=NULL]
     d[,charm:=paste0(Chromosome,arm)]
-    message('Done!')
 
+    ## calculate LogR
+    .get_LogR <- function(d) {
+        mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
+        d$LogR <- log2(d$count / mid)
+        d
+    }
+    d <- d[,.get_LogR(.SD),by=sample]
+
+    if(smooth_LogR==T) {
+        message('Smoothing LogR with a rolling median symmetrically over 5 bins ...')
+        get_smooth_LogR <- function(d,width) {
+            n <- nrow(d)
+            d <- d[order(bin_start,bin_end)]
+            d$LogRsmooth <- as.numeric(NA)
+            for(i in 1:n) {
+                indices <- (i-width):(i+width)
+                indices <- indices[indices >= 1 & indices <= n]
+                rolling_median <- median(d$LogR[indices],na.rm=T)
+                d$LogRsmooth[i] <- rolling_median
+            }
+            d
+        }
+        d <- d[,get_smooth_LogR(.SD,width=5),by=c('sample','Chromosome','arm')]
+        d[,LogR:=LogRsmooth]
+        d[,LogRsmooth:=NULL]
+        message('Done with smoothing.')
+    }
+
+    d[is.nan(baf),baf:=NA]
+    d[!is.na(baf),count1:=count * baf]
+    d[!is.na(baf),count2:=count * (1-baf)]
+    d[is.na(baf),count1:=count]
+    d[is.na(baf),count2:=0]
+    d[is.na(baf),Ref:='.']
+    d[is.na(baf),Alt:='.']
+    d[!is.na(baf),Ref:='N']
+    d[!is.na(baf),Alt:='N']
+    setnames(d,'baf','BAF')
+    d[,dp:=count1+count2]
+    d <- d[,c('Chromosome','arm','Position','Ref','Alt','sample','count1','count2','LogR','dp','BAF','bin','charm'),with=F]
+    d[BAF < 0 | BAF > 1, BAF:=NA]
+    d[,bin:=paste0(Chromosome,':',Position)]
+    d$bin <- as.integer(factor(d$bin, levels=unique(d$bin)))
+
+    message('Done!')
     d
 }
