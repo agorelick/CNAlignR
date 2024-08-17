@@ -2,9 +2,7 @@
 ##' preprocess_lowpass_data
 ##' Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, seed=NA, normal_sample, blacklisted_regions_file=NA, smooth_LogR=T) {
-
-    if(!is.na(seed)) set.seed(seed)
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, smooth_LogR=F, LogR_outlier_percentiles=c(0.005,0.995)) {
 
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
@@ -148,16 +146,6 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     block_counts_long <- merge(x_counts, y_counts, by=c('bin','block','variable'))
     block_counts_long[,total:=value.x+value.y]
     
-
-    #get_representative_block_per_sample <- function(block_counts_long) {
-    #    block_counts_long <- block_counts_long[order(total, decreasing=T),]
-    #    block_counts_long[1,] 
-    #}
-    #collapsed_bin_counts <- block_counts_long[,get_representative_block_per_sample(.SD),by=c('bin','variable')]
-    #collapsed_bin_counts.x <- data.table::dcast(bin ~ variable, value.var='value.x', data=collapsed_bin_counts)
-    #collapsed_bin_counts.y <- data.table::dcast(bin ~ variable, value.var='value.y', data=collapsed_bin_counts)
-    #collapsed_bin_counts <- merge(collapsed_bin_counts.x, collapsed_bin_counts.y, by='bin', all=T)
-
     ## test each block within a bin for significant allelic imbalance.
     ## If any do, we assume there is the same allelic imbalance across all the blocks.
     ## In this case, we will swap .x and .y labels for the other blocks so that their combined BAFs have the same direction.
@@ -271,6 +259,13 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
         d
     }
     d <- d[,.get_LogR(.SD),by=sample]
+
+    if(all(!is.na(LogR_outlier_percentiles))) {
+        message('Winsorising LogR outside percentiles: ',paste(LogR_outlier_percentiles,collapse='-'),' ...')
+        qs <- quantile(d$LogR,LogR_outlier_percentiles,na.rm=T) 
+        d[LogR < qs[1], LogR:=qs[1]]
+        d[LogR > qs[2], LogR:=qs[2]]
+    }
 
     if(smooth_LogR==T) {
         message('Smoothing LogR with a rolling median symmetrically over 5 bins ...')
