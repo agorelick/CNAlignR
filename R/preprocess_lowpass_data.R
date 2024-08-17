@@ -2,7 +2,7 @@
 ##' preprocess_lowpass_data
 ##' Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, smooth_LogR=F, LogR_outlier_percentiles=c(0.005,0.995)) {
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_outlier_percentiles=c(NA,0.99)) {
 
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
@@ -11,9 +11,7 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
         diploid_chrs <- c(1:22)       
     }
     
-    ## load bin counts from QDNAseq. We need to annotate these bins with allele-specific counts 
-    ## (for bins containing het-SNPs)
-    ## this probably means the het-SNPs bins need to perfectly align with the QDNAseq bins
+    ## load bin counts from QDNAseq. We need to annotate these bins with allele-specific counts (for bins containing het-SNPs)
     cnt <- readRDS(qdnaseq_data)
     setnames(cnt,c('start','end'),c('bin_start','bin_end'))
     cnt[,bin_length:=bin_end-bin_start+1]
@@ -260,32 +258,36 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     }
     d <- d[,.get_LogR(.SD),by=sample]
 
-    if(all(!is.na(LogR_outlier_percentiles))) {
-        message('Winsorising LogR outside percentiles: ',paste(LogR_outlier_percentiles,collapse='-'),' ...')
-        qs <- quantile(d$LogR,LogR_outlier_percentiles,na.rm=T) 
-        d[LogR < qs[1], LogR:=qs[1]]
-        d[LogR > qs[2], LogR:=qs[2]]
+    if(!is.na(LogR_outlier_percentiles[1])) {
+        message('Winsorising LogR below percentile: ',LogR_outlier_percentiles[1],' ...')
+        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[1],na.rm=T) 
+        d[Chromosome!='MT' & LogR < q, LogR:=q]
     }
 
-    if(smooth_LogR==T) {
-        message('Smoothing LogR with a rolling median symmetrically over 5 bins ...')
-        get_smooth_LogR <- function(d,width) {
-            n <- nrow(d)
-            d <- d[order(bin_start,bin_end)]
-            d$LogRsmooth <- as.numeric(NA)
-            for(i in 1:n) {
-                indices <- (i-width):(i+width)
-                indices <- indices[indices >= 1 & indices <= n]
-                rolling_median <- median(d$LogR[indices],na.rm=T)
-                d$LogRsmooth[i] <- rolling_median
-            }
-            d
-        }
-        d <- d[,get_smooth_LogR(.SD,width=5),by=c('sample','Chromosome','arm')]
-        d[,LogR:=LogRsmooth]
-        d[,LogRsmooth:=NULL]
-        message('Done with smoothing.')
+    if(!is.na(LogR_outlier_percentiles[2])) {
+        message('Winsorising LogR above percentile: ',LogR_outlier_percentiles[2],' ...')
+        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[2],na.rm=T) 
+        d[Chromosome!='MT' & LogR > q, LogR:=q]
     }
+
+    # move to obj 
+    #if(smooth_LogR==T) {
+    #    message('Smoothing LogR with a rolling median symmetrically over 5 bins ...')
+    #    get_smooth_LogR <- function(d,width) {
+    #        n <- nrow(d)
+    #        d <- d[order(bin_start,bin_end)]
+    #        d$LogRsmooth <- as.numeric(NA)
+    #        for(i in 1:n) {
+    #            indices <- (i-width):(i+width)
+    #            indices <- indices[indices >= 1 & indices <= n]
+    #            rolling_median <- median(d$LogR[indices],na.rm=T)
+    #            d$LogRsmooth[i] <- rolling_median
+    #        }
+    #        d
+    #    }
+    #    d <- d[,get_smooth_LogR(.SD,width=5),by=c('sample','Chromosome','arm')]
+    #    message('Done with smoothing.')
+    #}
 
     d[is.nan(baf),baf:=NA]
     d[!is.na(baf),count1:=count * baf]
@@ -298,7 +300,7 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     d[!is.na(baf),Alt:='N']
     setnames(d,'baf','BAF')
     d[,dp:=count1+count2]
-    d <- d[,c('Chromosome','arm','Position','Ref','Alt','sample','count1','count2','LogR','dp','BAF','bin','charm'),with=F]
+    d <- d[,c('Chromosome','arm','Position','Ref','Alt','sample','count1','count2','LogR','BAF','bin','charm'),with=F]
     d[BAF < 0 | BAF > 1, BAF:=NA]
     d[,bin:=paste0(Chromosome,':',Position)]
     d$bin <- as.integer(factor(d$bin, levels=unique(d$bin)))

@@ -3,7 +3,7 @@
 ##' Do multi-sample segmentation using ascat.asmultipcf. 
 ##'
 ##' @export
-run_ascat_multipcf <- function(obj, build, penalty=70, refine=F, selectAlg="exact", seed=as.integer(Sys.time()), selectAlg="exact") {
+run_ascat_multipcf <- function(obj, build, penalty=70, refine=F, selectAlg="exact", seed=as.integer(Sys.time())) {
     chr_levels <- c(1:22,'X','Y')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
