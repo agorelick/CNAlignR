@@ -1,30 +1,25 @@
 ##' run_ascat_multipcf
 ##'
-##' Run ascat.asmultipcf to do multi-sample segmentation, returns appended data objected.
+##' Do multi-sample segmentation using ascat.asmultipcf. 
 ##'
 ##' @export
-run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time()), refine=T, selectAlg="exact", overwrite_mpcf=F) {
+run_ascat_multipcf <- function(obj, build, penalty=70, refine=F, selectAlg="exact", seed=as.integer(Sys.time()), selectAlg="exact") {
     chr_levels <- c(1:22,'X','Y')
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Do multi-sample segmentation with ascat.asmultipcf
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    if(!'ascat.mpcf' %in% names(obj) | overwrite_mpcf==T) {
-        message('Running ascat.asmultipcf() with penalty=',penalty,', seed=',seed,', selectAlg=',selectAlg,'.')
-        ascat.mpcf = ascat.asmultipcf(obj$ascat.bc, out.dir=NA, seed=seed, penalty=penalty, refine=refine, selectAlg=selectAlg) 
-        obj$ascat.mpcf <- ascat.mpcf
-        obj$ascat.asmultipcf.params <- list(penalty=penalty, seed=seed, refine=refine, selectAlg=selectAlg)
-    } else {
-        message('obj already contains ascat.mpcf data, not overwriting it.')
-    }
+    message('Running ascat.asmultipcf() with penalty=',penalty,', seed=',seed,', selectAlg=',selectAlg,'.')
+    ascat.mpcf = ascat.asmultipcf(obj$ascat.bc, out.dir=NA, seed=seed, penalty=penalty, refine=refine, selectAlg=selectAlg) 
+    obj$ascat.mpcf <- ascat.mpcf
+    obj$ascat.asmultipcf.params <- list(penalty=penalty, seed=seed, refine=refine, selectAlg=selectAlg)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Extract segment data with start/end range and LogR/BAF values
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     message('Extracting segment data ...')
-
     ## extract the raw BAF and LogR from the ascat.mpcf object
     BAF_raw <- obj$ascat.mpcf$Tumor_BAF
     LogR_raw <- obj$ascat.mpcf$Tumor_LogR
@@ -47,7 +42,6 @@ run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time(
     message('Extraploting from the non-NA BAFs to the rest of each chromosome ...')
     BAFs_avail <- BAF_segmented[!is.na(rowMeans(BAF_segmented)),]
     current_BAFs <- BAFs_avail[1,]
-    #BAF_segmented <- extrapolate_BAFs(BAF_segmented, initial_BAFs) 
 
     for(i in 1:nrow(BAF_segmented)) {
         if(all(is.na(BAF_segmented[i,]))) {
@@ -114,7 +108,6 @@ run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time(
         segment[i] <- current_segment
     }
     snp_pos$segment <- segment
-    
     message('Collapsing each segment to start/end ranges ...')
     get_segments <- function(snp_pos) {
         n_markers <- nrow(snp_pos)
@@ -159,6 +152,7 @@ run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time(
     setnames(BAF_long,c('variable','value'),c('sample','BAF'))
     BAF_long$Chromosome <- factor(BAF_long$Chromosome, levels=chr_levels)
     BAF_long <- BAF_long[order(Chromosome,Position,sample),]   
+    BAF_long[germline_copies!=2, BAF:=NA]
     LogR_dat <- cbind(VariantID=rownames(LogR_raw), as.data.table(LogR_raw))
     LogR_dat <- merge(snp_pos, LogR_dat, by='VariantID', all.x=T)
     LogR_long <- data.table::melt(LogR_dat, id.vars=c('VariantID','Chromosome','segment','seg_length','n_markers','arm','Position','charm','germline_copies'))
@@ -214,8 +208,7 @@ run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time(
     LogR_segs[,global_seg_start_mb:=seg_start/1e6 + global_start_mb]
     LogR_segs[,global_seg_end_mb:=seg_end/1e6 + global_start_mb]
     LogR_segs[,global_start_mb:=NULL]
-    LogR_segs <- data.table::melt(LogR_segs, id.vars=c('Chromosome','segment','arm','germline_copies','seg_start',
-                                                       'seg_end','n_markers','seg_length','global_seg_start_mb','global_seg_end_mb'))
+    LogR_segs <- data.table::melt(LogR_segs, id.vars=c('Chromosome','segment','arm','germline_copies','seg_start','seg_end','n_markers','seg_length','global_seg_start_mb','global_seg_end_mb'))
     setnames(LogR_segs,c('variable','value'),c('sample','LogR_segmented'))
 
     BAF_segs <- merge(segs, BAF_dat, by='segment', all.x=T)
@@ -223,9 +216,9 @@ run_ascat_multipcf <- function(obj, build, penalty=70, seed=as.integer(Sys.time(
     BAF_segs[,global_seg_start_mb:=seg_start/1e6 + global_start_mb]
     BAF_segs[,global_seg_end_mb:=seg_end/1e6 + global_start_mb]
     BAF_segs[,global_start_mb:=NULL]
-    BAF_segs <- data.table::melt(BAF_segs, id.vars=c('Chromosome','segment','arm','germline_copies','seg_start',
-                                                       'seg_end','n_markers','seg_length','global_seg_start_mb','global_seg_end_mb'))
+    BAF_segs <- data.table::melt(BAF_segs, id.vars=c('Chromosome','segment','arm','germline_copies','seg_start','seg_end','n_markers','seg_length','global_seg_start_mb','global_seg_end_mb'))
     setnames(BAF_segs,c('variable','value'),c('sample','BAF_segmented'))
+    BAF_segs[germline_copies!=2, BAF_segmented:=NA]
 
     ## add segment-level data to obj
     segment_level <- cbind(LogR_segs, BAF_segmented=BAF_segs$BAF_segmented)
