@@ -8,12 +8,11 @@ run_ascat_multipcf(
   obj,
   build,
   penalty = 70,
-  seed = as.integer(Sys.time()),
-  refine = T,
+  refine = F,
   selectAlg = "exact",
-  overwrite_mpcf = F
+  seed = NA
 )
 }
 \description{
-Run ascat.asmultipcf to do multi-sample segmentation, returns appended data objected.
+Do multi-sample segmentation using ascat.asmultipcf.
 }

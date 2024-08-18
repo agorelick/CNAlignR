@@ -8,6 +8,7 @@ plot_fit(
   sample_name,
   fit,
   obj,
+  build,
   int_copies = F,
   highlight_seg = c(),
   LogR_min = NA,

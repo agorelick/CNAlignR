@@ -3,8 +3,9 @@
 ##' Do multi-sample segmentation using ascat.asmultipcf. 
 ##'
 ##' @export
-run_ascat_multipcf <- function(obj, build, penalty=70, refine=F, selectAlg="exact", seed=as.integer(Sys.time())) {
+run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA) { 
     chr_levels <- c(1:22,'X','Y')
+    if(is.na(seed)) seed <- as.integer(Sys.time())
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Do multi-sample segmentation with ascat.asmultipcf
@@ -69,7 +70,7 @@ run_ascat_multipcf <- function(obj, build, penalty=70, refine=F, selectAlg="exac
 
     ## get number of germline copies (germline_copies) for each chromosome including sex chromosomes
     snp_pos[Chromosome %in% 1:22,germline_copies:=2]
-    sex <- obj$ascat.loadData.params$gender
+    sex <- obj$ascat.loadData.params$sex
     if(sex=='XX') {
         snp_pos[Chromosome %in% 'X',germline_copies:=2]
         snp_pos[Chromosome %in% 'Y',germline_copies:=0]

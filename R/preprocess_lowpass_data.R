@@ -1,8 +1,10 @@
 
 ##' preprocess_lowpass_data
-##' Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
+##'
+##' Create preprocessed data from snp-pileup, QDNAseq, and GLIMPSE output.
+##'
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA) { 
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_outlier_percentiles) {
 
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
@@ -235,6 +237,7 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     d[,position:=round((bin_start + bin_end - 1)/2)]
     d <- d[order(chr,position,sample),]
 
+    #browser()
     message('Adding chr-arms ...')
     arms <- genome_data(build)$arms
     arms[,arm_start:=arm_start*1e6]  
@@ -258,18 +261,17 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     }
     d <- d[,.get_LogR(.SD),by=sample]
 
-    # move to obj
-    #if(!is.na(LogR_outlier_percentiles[1])) {
-    #    message('Winsorising LogR below percentile: ',LogR_outlier_percentiles[1],' ...')
-    #    q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[1],na.rm=T) 
-    #    d[Chromosome!='MT' & LogR < q, LogR:=q]
-    #}
+    if(!is.na(LogR_outlier_percentiles[1])) {
+        message('Winsorising LogR below percentile: ',LogR_outlier_percentiles[1],' ...')
+        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[1],na.rm=T) 
+        d[Chromosome!='MT' & LogR < q, LogR:=q]
+    }
 
-    #if(!is.na(LogR_outlier_percentiles[2])) {
-    #    message('Winsorising LogR above percentile: ',LogR_outlier_percentiles[2],' ...')
-    #    q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[2],na.rm=T) 
-    #    d[Chromosome!='MT' & LogR > q, LogR:=q]
-    #}
+    if(!is.na(LogR_outlier_percentiles[2])) {
+        message('Winsorising LogR above percentile: ',LogR_outlier_percentiles[2],' ...')
+        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[2],na.rm=T) 
+        d[Chromosome!='MT' & LogR > q, LogR:=q]
+    }
 
     # move to obj 
     #if(smooth_LogR==T) {

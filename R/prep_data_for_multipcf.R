@@ -23,8 +23,8 @@ prep_data_for_multipcf <- function(Tumor_LogR_file, Tumor_BAF_file, Germline_Log
                               Germline_BAF_file = Germline_BAF_file,
                               gender = gender, 
                               genomeVersion = build) 
-    ascat.loadData.params <- list(Tumor_LogR_file=Tumor_LogR_file, Tumor_BAF_file=Tumor_BAF_file, Germline_LogR_file=Germline_LogR_file, Germline_BAF_file=Germline_BAF_file, sex=sex, gender = unique(gender), genomeVersion = build)
-   
+    ascat.loadData.params <- list(Tumor_LogR_file=Tumor_LogR_file, Tumor_BAF_file=Tumor_BAF_file, Germline_LogR_file=Germline_LogR_file, Germline_BAF_file=Germline_BAF_file, sex=sex, genomeVersion = build)
+  
     ## get list of tumor samples and (single) normal sample used throughout the pipeline
     tumor_samples <- names(ascat.bc$Tumor_LogR)
     normal_sample <- names(ascat.bc$Germline_LogR)

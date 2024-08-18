@@ -4,7 +4,15 @@
 \alias{save_preprocessed_lowpass_data_for_ascat}
 \title{save_preprocessed_lowpass_data_for_ascat}
 \usage{
-save_preprocessed_lowpass_data_for_ascat(d, normal_sample, sex, tmpdir = ".")
+save_preprocessed_lowpass_data_for_ascat(
+  d,
+  normal_sample,
+  sex,
+  tumor_LogR_file,
+  tumor_BAF_file,
+  germline_LogR_file,
+  germline_BAF_file
+)
 }
 \description{
 Write preprocessed lowpass data into the format expected for ascat.loadData()

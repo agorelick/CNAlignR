@@ -2,25 +2,22 @@
 % Please edit documentation in R/preprocess_lowpass_data.R
 \name{preprocess_lowpass_data}
 \alias{preprocess_lowpass_data}
-\title{preprocess_lowpass_data
-Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE}
+\title{preprocess_lowpass_data}
 \usage{
 preprocess_lowpass_data(
   qdnaseq_data,
   pileup_data,
   phased_bcf,
   sample_map,
+  normal_sample,
   sex,
   build,
   max_phaseable_distance = 20000,
   min_bin_reads_for_baf = 10,
-  seed = NA,
-  normal_sample,
   blacklisted_regions_file = NA,
-  smooth_LogR = T
+  LogR_outlier_percentiles = c(NA, 0.99)
 )
 }
 \description{
-preprocess_lowpass_data
-Create preprocessed data from output snp-pileup, QDNAseq, and GLIMPSE
+Create preprocessed data from snp-pileup, QDNAseq, and GLIMPSE output.
 }
