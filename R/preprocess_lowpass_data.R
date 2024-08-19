@@ -262,14 +262,14 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     d <- d[,.get_LogR(.SD),by=sample]
 
     if(!is.na(LogR_outlier_percentiles[1])) {
-        message('Winsorising LogR below percentile: ',LogR_outlier_percentiles[1],' ...')
         q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[1],na.rm=T) 
+        message(paste0('Winsorising LogR below ',LogR_outlier_percentiles[2],' percentile (LogR < ',q,') ...'))
         d[Chromosome!='MT' & LogR < q, LogR:=q]
     }
 
     if(!is.na(LogR_outlier_percentiles[2])) {
-        message('Winsorising LogR above percentile: ',LogR_outlier_percentiles[2],' ...')
         q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[2],na.rm=T) 
+        message(paste0('Winsorising LogR above ',LogR_outlier_percentiles[2],' percentile (LogR > ',q,') ...'))
         d[Chromosome!='MT' & LogR > q, LogR:=q]
     }
 
