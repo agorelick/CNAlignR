@@ -3,7 +3,7 @@
 ##' Load and preprocess low-pass WGS data from GLIMPSE2, QDNAseq and snp-pileup workflows.
 ##'
 ##' @export
-get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_outlier_percentiles=c(NA,0.99),  multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=F, seed=NA) {
+get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
 
     ## load and preprocess data from GLIMPSE2, QDNAseq and snp-pileup
     preprocessed_data <- preprocess_lowpass_data(qdnaseq_data=qdnaseq_data,
@@ -16,7 +16,9 @@ get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_b
                                                  max_phaseable_distance=max_phaseable_distance,
                                                  min_bin_reads_for_baf=min_bin_reads_for_baf,
                                                  blacklisted_regions_file=blacklisted_regions_file,
-                                                 LogR_outlier_percentiles=LogR_outlier_percentiles)
+                                                 LogR_range_allowed=LogR_range_allowed,
+                                                 LogR_winsor_percentiles=LogR_winsor_percentiles,
+                                                 LogR_smooth_bins=LogR_smooth_bins)
 
     ## define temporary file paths
     if(!dir.exists(data_dir)) dir.create(data_dir, recursive=T)
@@ -57,6 +59,28 @@ get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_b
         trash <- sapply(c(Tumor_LogR_file,Tumor_BAF_file,Germline_LogR_file,Germline_BAF_file), file.remove)
     }
 
+    main_params <- list(qdnaseq_data=qdnaseq_data,
+                   pileup_data=pileup_data,
+                   phased_bcf=phased_bcf,
+                   sample_map=sample_map,
+                   patient=patient,
+                   sex=sex,
+                   normal_sample=normal_sample,
+                   build=build,
+                   data_dir=data_dir,
+                   max_phaseable_distance=max_phaseable_distance,
+                   min_bin_reads_for_baf=min_bin_reads_for_baf,
+                   blacklisted_regions_file=blacklisted_regions_file,
+                   LogR_range_allowed=LogR_range_allowed,
+                   LogR_winsor_percentiles=LogR_winsor_percentiles,
+                   LogR_smooth_bins=LogR_smooth_bins,
+                   multipcf_penalty=multipcf_penalty,
+                   multipcf_refine=multipcf_refine,
+                   multipcf_selectAlg=multipcf_selectAlg,
+                   cleanup=cleanup,
+                   seed=seed) 
+
+    obj$main_params <- main_params
     obj
 }
  

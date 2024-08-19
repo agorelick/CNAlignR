@@ -4,7 +4,7 @@
 ##' Create preprocessed data from snp-pileup, QDNAseq, and GLIMPSE output.
 ##'
 ##' @export
-preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_outlier_percentiles) {
+preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_range_allowed, LogR_winsor_percentiles, LogR_smooth_bins) { 
 
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
@@ -261,37 +261,58 @@ preprocess_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sampl
     }
     d <- d[,.get_LogR(.SD),by=sample]
 
-    if(!is.na(LogR_outlier_percentiles[1])) {
-        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[1],na.rm=T) 
-        message(paste0('Winsorising LogR below ',LogR_outlier_percentiles[2],' percentile (LogR < ',q,') ...'))
-        d[Chromosome!='MT' & LogR < q, LogR:=q]
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # These options can help accommodate both 
+    # off-target read data and true lpWGS data
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    if(!is.na(LogR_range_allowed[1])) {
+        message(paste0('Removing LogR values < ',LogR_range_allowed[1],' ...'))
+        d[Chromosome!='MT' & LogR < LogR_range_allowed[1], LogR:=NA]
+    }
+    
+    if(!is.na(LogR_range_allowed[2])) {
+        message(paste0('Removing LogR > ',LogR_range_allowed[2],' ...'))
+        d[Chromosome!='MT' & LogR > LogR_range_allowed[2], LogR:=NA]
     }
 
-    if(!is.na(LogR_outlier_percentiles[2])) {
-        q <- quantile(d$LogR[d$Chromosome %in% 1:22],LogR_outlier_percentiles[2],na.rm=T) 
-        message(paste0('Winsorising LogR above ',LogR_outlier_percentiles[2],' percentile (LogR > ',q,') ...'))
+    if(!is.na(LogR_winsor_percentiles[1])) {
+        q <- quantile(d$LogR[d$Chromosome!='MT'],LogR_winsor_percentiles[1],na.rm=T) 
+        message(paste0('Winsorising LogR below ',LogR_winsor_percentiles[1],' percentile (LogR < ',q,') ...'))
+        d[Chromosome!='MT' & LogR < q, LogR:=q]
+    }
+    
+    if(!is.na(LogR_winsor_percentiles[2])) {
+        q <- quantile(d$LogR[d$Chromosome!='MT'],LogR_winsor_percentiles[2],na.rm=T) 
+        message(paste0('Winsorising LogR above ',LogR_winsor_percentiles[2],' percentile (LogR > ',q,') ...'))
         d[Chromosome!='MT' & LogR > q, LogR:=q]
     }
 
-    # move to obj 
-    #if(smooth_LogR==T) {
-    #    message('Smoothing LogR with a rolling median symmetrically over 5 bins ...')
-    #    get_smooth_LogR <- function(d,width) {
-    #        n <- nrow(d)
-    #        d <- d[order(bin_start,bin_end)]
-    #        d$LogRsmooth <- as.numeric(NA)
-    #        for(i in 1:n) {
-    #            indices <- (i-width):(i+width)
-    #            indices <- indices[indices >= 1 & indices <= n]
-    #            rolling_median <- median(d$LogR[indices],na.rm=T)
-    #            d$LogRsmooth[i] <- rolling_median
-    #        }
-    #        d
-    #    }
-    #    d <- d[,get_smooth_LogR(.SD,width=5),by=c('sample','Chromosome','arm')]
-    #    message('Done with smoothing.')
-    #}
+    if(!is.na(LogR_smooth_bins)) {
+        message('Smoothing LogR with a symmetric rolling median (+/- ',LogR_smooth_bins,' bins) ...')
+        get_smooth_LogR <- function(d,width) {
+            n <- nrow(d)
+            d <- d[order(bin_start,bin_end)]
+            d$LogRsmooth <- as.numeric(NA)
+            for(i in 1:n) {
+                indices <- (i-width):(i+width)
+                indices <- indices[indices >= 1 & indices <= n]
+                rolling_median <- median(d$LogR[indices],na.rm=T)
+                d$LogRsmooth[i] <- rolling_median
+            }
+            d
+        }
+        dm <- d[Chromosome=='MT',]
+        d <- d[Chromosome!='MT',get_smooth_LogR(.SD,width=LogR_smooth_bins),by=c('sample','Chromosome','arm')]
+        d[,LogR:=LogRsmooth]
+        d[,LogRsmooth:=NULL]
+        d <- rbind(d, dm)
+        message('Done with smoothing.')
+    }
 
+    
+    ## add count1/2, which are really the normalized counts from QDNAseq scaled by BAF and (1-BAF) for the respective bin
     d[is.nan(baf),baf:=NA]
     d[!is.na(baf),count1:=count * baf]
     d[!is.na(baf),count2:=count * (1-baf)]

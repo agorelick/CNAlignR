@@ -1,9 +1,6 @@
 ##' get_fit
 ##' @export
-get_fit <- function(sample_name, obj, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, 
-                    min_ploidy=1.7, max_ploidy=5, 
-                    min_purity=0.05, max_purity=0.95,                     
-                    cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025) {
+get_fit <- function(sample_name, obj, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, min_ploidy=1.7, max_ploidy=5, min_purity=0.05, max_purity=0.95, cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025) {
     require(parallel)
 
     fit_segments <- obj$fit_segments
