@@ -1,12 +1,18 @@
 ##' get_fit
 ##' @export
-get_fit <- function(sample_name, obj, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, min_ploidy=1.7, max_ploidy=5, min_purity=0.05, max_purity=0.95, cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025) {
+get_fit <- function(sample_name, obj, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, min_ploidy=1.7, max_ploidy=5, min_purity=0.05, max_purity=0.95, cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025, included_chrs=c()) {
     require(parallel)
 
+    #browser()
     fit_segments <- obj$fit_segments
     sample_dat <- obj$marker_level_annotated[[sample_name]]
     sample_dat <- sample_dat[!is.na(LogR) & !is.na(BAF) & !is.na(LogR_segmented) & !is.na(BAF_segmented)]
     sample_seg <- obj$segment_level[[sample_name]]
+    if(length(included_chrs > 0)) {
+        message('Only considering chromosomes: ',paste(included_chrs,collapse=','))
+        sample_dat <- sample_dat[Chromosome %in% included_chrs,]
+        sample_seg <- sample_seg[Chromosome %in% included_chrs,]
+    }
     sample_dat <- sample_dat[segment %in% fit_segments,]
     sample_seg <- sample_seg[segment %in% fit_segments,]
     logR_CDF <- obj$ECDF_fits[[sample_name]]$LogR_CDF
@@ -138,7 +144,7 @@ get_loglik <- function(pu, pl, sample_dat, LogR_CDF, BAF_CDF, bin_level=F) {
 
 ##' plot_fit
 ##' @export
-plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, point_size=0.5) {
+plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, LogR_point_size=0.5, BAF_point_size=0.5) {
     require(cowplot)
     require(ggplot2)
     sample_dat <- obj$marker_level_annotated[[sample_name]]
@@ -174,7 +180,7 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
         scale_y_continuous(limits=c(LogR_qs[1]-padding, LogR_qs[2]+padding),expand=c(0,0)) + 
         scale_x_continuous(breaks=plot_chr$global_midpoint, labels=plot_chr$chr,expand=c(0,0)) 
     if(nrow(highlight) > 0) p1 <- p1 + annotate("rect", xmin=highlight$global_seg_start_mb, xmax=highlight$global_seg_end_mb, ymin=LogR_qs[1]-padding, ymax=LogR_qs[2]+padding, fill='orange', alpha=0.1)
-    p1 <- p1 + geom_point(data=plot_sample_dat[arrow==''], color='#bfbfbf',size=point_size,pch=16) +
+    p1 <- p1 + geom_point(data=plot_sample_dat[arrow==''], color='#bfbfbf',size=LogR_point_size,pch=16) +
         geom_hline(yintercept=centerline, color='green', linewidth=0.25) +
         geom_hline(yintercept=fit$dipLogR, color='purple', linewidth=0.25) +
         geom_vline(xintercept=c(0,plot_chr$global_end), linewidth=0.25) +
@@ -188,7 +194,7 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
         scale_x_continuous(breaks=plot_chr$global_midpoint, labels=plot_chr$chr,expand=c(0,0)) +
         scale_y_continuous(limits=c(-0.05,1.05), breaks=seq(0,1,by=0.25), expand=c(0,0))
     if(nrow(highlight) > 0) p2 <- p2 + annotate("rect", xmin=highlight$global_seg_start_mb, xmax=highlight$global_seg_end_mb, ymin=-0.05, ymax=1.05, fill='orange', alpha=0.1)
-    p2 <- p2 + geom_point(color='#bfbfbf',size=point_size,pch=16) +
+    p2 <- p2 + geom_point(color='#bfbfbf',size=BAF_point_size,pch=16) +
         geom_vline(xintercept=c(0,plot_chr$global_end), linewidth=0.25) +
         geom_segment(data=plot_sample_seg,aes(x=global_seg_start_mb,xend=global_seg_end_mb,y=BAF_segmented,yend=BAF_segmented),color='blue',linewidth=0.75,lineend='round') +
         geom_segment(data=plot_sample_seg,aes(x=global_seg_start_mb,xend=global_seg_end_mb,y=1-BAF_segmented,yend=1-BAF_segmented),color='blue',linewidth=0.75,lineend='round') +
