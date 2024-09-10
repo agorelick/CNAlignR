@@ -9,14 +9,21 @@ get_CNalign_obj_for_lowpass_data(
   pileup_data,
   phased_bcf,
   sample_map,
+  patient,
   sex,
   normal_sample,
   build,
   data_dir = ".",
+  max_phaseable_distance = 20000,
   min_bin_reads_for_baf = 10,
+  blacklisted_regions_file = NA,
+  LogR_range_allowed = c(-3, 3),
+  LogR_winsor_percentiles = c(NA, NA),
+  LogR_smooth_bins = NA,
   multipcf_penalty = 70,
   multipcf_refine = F,
-  blacklisted_regions_file = NA,
+  multipcf_selectAlg = "exact",
+  cleanup = T,
   seed = NA
 )
 }

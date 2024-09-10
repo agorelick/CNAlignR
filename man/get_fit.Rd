@@ -20,7 +20,8 @@ get_fit(
   best_only = T,
   bin_level = F,
   purity_stepsize = 0.025,
-  ploidy_stepsize = 0.025
+  ploidy_stepsize = 0.025,
+  included_chrs = c()
 )
 }
 \description{

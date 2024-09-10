@@ -5,13 +5,13 @@
 \title{save_preprocessed_lowpass_data_for_ascat}
 \usage{
 save_preprocessed_lowpass_data_for_ascat(
-  d,
+  preprocessed_data,
   normal_sample,
   sex,
-  tumor_LogR_file,
-  tumor_BAF_file,
-  germline_LogR_file,
-  germline_BAF_file
+  Tumor_LogR_file,
+  Tumor_BAF_file,
+  Germline_LogR_file,
+  Germline_BAF_file
 )
 }
 \description{

@@ -12,10 +12,12 @@ preprocess_lowpass_data(
   normal_sample,
   sex,
   build,
-  max_phaseable_distance = 20000,
-  min_bin_reads_for_baf = 10,
-  blacklisted_regions_file = NA,
-  LogR_outlier_percentiles = c(NA, 0.99)
+  max_phaseable_distance,
+  min_bin_reads_for_baf,
+  blacklisted_regions_file,
+  LogR_range_allowed,
+  LogR_winsor_percentiles,
+  LogR_smooth_bins
 )
 }
 \description{

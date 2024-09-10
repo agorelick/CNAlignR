@@ -13,7 +13,8 @@ plot_fit(
   highlight_seg = c(),
   LogR_min = NA,
   LogR_max = NA,
-  point_size = 0.5
+  LogR_point_size = 0.5,
+  BAF_point_size = 0.5
 )
 }
 \description{

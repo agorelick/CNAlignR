@@ -11,7 +11,6 @@ prep_data_for_multipcf(
   Germline_BAF_file,
   sex,
   build,
-  cleanup = F,
   GCcontentfile = NULL,
   replictimingfile = NULL
 )
