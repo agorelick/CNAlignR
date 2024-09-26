@@ -256,9 +256,14 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
 
     ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
     .get_LogR <- function(d) {
-        Ratio <- d$count / d$n_count
-        mid <- median(Ratio[d$Chromosome %in% c(1:22)],na.rm=T)
-        d$LogR <- log2(Ratio / mid)
+        #Ratio <- d$count / d$n_count
+        #mid <- median(Ratio[d$Chromosome %in% c(1:22)],na.rm=T)
+        #d$LogR <- log2(Ratio / mid)
+        tumor_mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
+        d$tumor_LogR <- log2(d$count / tumor_mid)
+        normal_mid <- median(d$n_count[d$Chromosome %in% c(1:22)],na.rm=T)
+        d$normal_LogR <- log2(d$n_count / normal_mid)
+        d$LogR <- d$tumor_LogR - d$normal_LogR
         d
     }
     d <- d[,.get_LogR(.SD),by=sample]
