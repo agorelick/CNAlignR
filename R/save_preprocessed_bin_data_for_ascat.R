@@ -1,9 +1,9 @@
-##' save_preprocessed_lowpass_data_for_ascat
+##' save_preprocessed_bin_data_for_ascat
 ##'
-##' Write preprocessed lowpass data into the format expected for ascat.loadData()
+##' Write preprocessed bin data into the format expected for ascat.loadData()
 ##'
 ##' @export
-save_preprocessed_lowpass_data_for_ascat <- function(preprocessed_data, normal_sample, sex, Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file) {
+save_preprocessed_bin_data_for_ascat <- function(preprocessed_data, normal_sample, sex, Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file) {
 
     if(sex=='XX') {
         valid_chr <- c(1:22,'X')
@@ -14,7 +14,7 @@ save_preprocessed_lowpass_data_for_ascat <- function(preprocessed_data, normal_s
     d$Chromosome <- factor(d$Chromosome, levels=valid_chr)
     tumor_samples <- unique(d[sample!=normal_sample,(sample)])
 
-    message('Saving preprocessed lowpass data for input to ASCAT.')
+    message('Saving preprocessed bin data for input to ASCAT.')
     t_LogR <- data.table::dcast(Chromosome + Position ~ sample, data=d[sample %in% tumor_samples], value.var='LogR')
     t_LogR <- t_LogR[order(Chromosome, Position),]
     n_LogR <- dcast(Chromosome + Position ~ sample, data=d[sample %in% normal_sample,], value.var='LogR')

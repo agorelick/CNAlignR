@@ -1,12 +1,12 @@
-##' get_CNalign_obj_for_lowpass_data
+##' get_CNalign_obj_for_bin_data
 ##'
-##' Load and preprocess low-pass WGS data from GLIMPSE2, QDNAseq and snp-pileup workflows.
+##' Load and preprocess SCNA bin data from GLIMPSE2, QDNAseq and snp-pileup workflows.
 ##'
 ##' @export
-get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
+get_CNalign_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
 
     ## load and preprocess data from GLIMPSE2, QDNAseq and snp-pileup
-    preprocessed_data <- preprocess_lowpass_data(qdnaseq_data=qdnaseq_data,
+    preprocessed_data <- preprocess_bin_data(qdnaseq_data=qdnaseq_data,
                                                  pileup_data=pileup_data,
                                                  phased_bcf=phased_bcf,
                                                  sample_map=sample_map,
@@ -28,7 +28,7 @@ get_CNalign_obj_for_lowpass_data <- function(qdnaseq_data, pileup_data, phased_b
     Germline_BAF_file <- file.path(data_dir,paste(patient,'Germline_BAF.txt',sep='_'))
 
     ## create temporary files
-    save_preprocessed_lowpass_data_for_ascat(preprocessed_data=preprocessed_data,
+    save_preprocessed_bin_data_for_ascat(preprocessed_data=preprocessed_data,
                                              normal_sample=normal_sample,
                                              sex=sex,
                                              Tumor_LogR_file=Tumor_LogR_file,

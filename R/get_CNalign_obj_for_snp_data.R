@@ -61,6 +61,7 @@ get_CNalign_obj_for_snp_data <- function(sample_map, patient, sex, build, ascat_
     x_BAF$V1 <- NULL
 
     ## subset for positions in both logR and BAF data
+    tumor_samples <- tumor_samples[tumor_samples %in% names(x_LogR)]
     valid_rows <- intersect(rownames(x_BAF), rownames(x_LogR))
     x_LogR <- x_LogR[valid_rows,]
     x_BAF <- x_BAF[valid_rows,]
@@ -69,15 +70,15 @@ get_CNalign_obj_for_snp_data <- function(sample_map, patient, sex, build, ascat_
     n_LogR <- x_LogR[,c('Chromosome','Position',normal_sample)]
     n_BAF <- x_BAF[,c('Chromosome','Position',normal_sample)]
 
-    #if(!dir.exists(output_dir)) dir.create(output_dir)
-    tumor_LogR_file <- file.path(data_dir,'Tumor_LogR.txt')
-    tumor_BAF_file <- file.path(data_dir,'Tumor_BAF.txt')
-    germline_LogR_file <- file.path(data_dir,'Germline_LogR.txt')
-    germline_BAF_file <- file.path(data_dir,'Germline_BAF.txt')
-    write.table(t_LogR, file = tumor_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(n_LogR, file = germline_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(t_BAF, file = tumor_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(n_BAF, file = germline_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
+    if(!dir.exists(data_dir)) dir.create(data_dir)
+    Tumor_LogR_file <- file.path(data_dir,'Tumor_LogR.txt')
+    Tumor_BAF_file <- file.path(data_dir,'Tumor_BAF.txt')
+    Germline_LogR_file <- file.path(data_dir,'Germline_LogR.txt')
+    Germline_BAF_file <- file.path(data_dir,'Germline_BAF.txt')
+    write.table(t_LogR, file = Tumor_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(n_LogR, file = Germline_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(t_BAF, file = Tumor_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(n_BAF, file = Germline_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
 
     ## get snp-level data
     message('Running preprocess_multipcf_data() ...')
