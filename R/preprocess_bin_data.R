@@ -256,32 +256,35 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
 
     ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
     .get_LogR <- function(d) {
-        #Ratio <- d$count / d$n_count
-        #mid <- median(Ratio[d$Chromosome %in% c(1:22)],na.rm=T)
-        #d$LogR <- log2(Ratio / mid)
-        tumor_mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
-        d$tumor_LogR <- log2(d$count / tumor_mid)
-        normal_mid <- median(d$n_count[d$Chromosome %in% c(1:22)],na.rm=T)
-        d$normal_LogR <- log2(d$n_count / normal_mid)
-        d$LogR <- d$tumor_LogR - d$normal_LogR
+        mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
+        d$LogR <- log2(d$count / mid)
         d
     }
     d <- d[,.get_LogR(.SD),by=sample]
 
+    ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
+    #.get_LogR <- function(d) {
+    #    Ratio <- d$count / d$n_count
+    #    mid <- median(Ratio[d$Chromosome %in% c(1:22)],na.rm=T)
+    #    d$LogR <- log2(Ratio / mid)
+    #    d
+    #}
+    #d <- d[,.get_LogR(.SD),by=sample]
+
     # from ASCAT https://github.com/VanLoo-lab/ascat/blob/master/ASCAT/R/ascat.prepareHTS.R 
     # For males, chrX needs to be adjusted as logR baseline will be 0 because of T/N ratio
-    if (sex=="XY") {
-        message('Adjusting LogR in chrX for male.')
-        # PAR1 and PAR2 information should be a mix of chrX and chrY so we should expect 1+1 (1 from X and 1 from Y).
-        # nonPAR should be X-specific and baseline is 1+0 so logR needs to be decreased according to gamma parameter (ascat.runAscat)
-        if (build=="hg19") {
-            nonPAR=c(2699521, 154931043)
-        } else if (build=="hg38") {
-            nonPAR=c(2781480, 155701382)
-        }
-        nonPAR=which(d$Chromosome %in% c("X", "chrX") & d$Position>=nonPAR[1] & d$Position<=nonPAR[2])
-        d$LogR[nonPAR]=d$LogR[nonPAR]-1
-    }
+    #if (sex=="XY") {
+    #    message('Adjusting LogR in chrX for male.')
+    #    # PAR1 and PAR2 information should be a mix of chrX and chrY so we should expect 1+1 (1 from X and 1 from Y).
+    #    # nonPAR should be X-specific and baseline is 1+0 so logR needs to be decreased according to gamma parameter (ascat.runAscat)
+    #    if (build=="hg19") {
+    #        nonPAR=c(2699521, 154931043)
+    #    } else if (build=="hg38") {
+    #        nonPAR=c(2781480, 155701382)
+    #    }
+    #    nonPAR=which(d$Chromosome %in% c("X", "chrX") & d$Position>=nonPAR[1] & d$Position<=nonPAR[2])
+    #    d$LogR[nonPAR]=d$LogR[nonPAR]-1
+    #}
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # These options can help accommodate both 
@@ -331,7 +334,6 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
         d <- rbind(d, dm)
         message('Done with smoothing.')
     }
-
     
     ## add count1/2, which are really the normalized counts from QDNAseq scaled by BAF and (1-BAF) for the respective bin
     d[is.nan(baf),baf:=NA]
