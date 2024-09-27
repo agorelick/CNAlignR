@@ -154,12 +154,24 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
     sname <- paste0(sample_name,' (purity=',fit$pu,', ploidy=',fit$pl,', loglik=',round(fit$loglik,3),', dipLogR=',fit$dipLogR,')')
     sex <- obj$ascat.loadData.params$sex
     highlight <- sample_seg[highlight==T,]
-    valid_chrs <- unique(sample_seg[germline_copies>0,(Chromosome)])
+    if(sex=='XX') { 
+        valid_chrs <- c(1:22,'X')
+    } else {
+        valid_chrs <- c(1:22,'X','Y')
+    }
     build <- obj$ascat.loadData.params$genomeVersion
     chr <- genome_data(build)$chr
 
+    ## move this to earlier function!
     plot_sample_seg <- sample_seg[Chromosome %in% valid_chrs]
-    plot_sample_dat <- sample_dat[Chromosome %in% valid_chrs]
+    plot_sample_seg <- merge(plot_sample_seg, chr[,c('chr','global_start','global_end'),with=F], by.x='Chromosome', by.y='chr', all.x=T)
+    plot_sample_seg[global_seg_start_mb < global_start, global_seg_start_mb:=global_start]
+    plot_sample_seg[global_seg_end_mb > global_end, global_seg_end_mb:=global_end]
+    plot_sample_seg <- plot_sample_seg[global_seg_start_mb <= global_seg_end_mb,] # why does this happen?
+    plot_sample_dat <- sample_dat[Chromosome %in% valid_chrs] 
+    plot_sample_dat <- merge(plot_sample_dat, chr[,c('chr','global_start','global_end'),with=F], by.x='Chromosome', by.y='chr', all.x=T)
+    plot_sample_dat <- plot_sample_dat[global_pos_mb >= global_start & global_pos_mb <= global_end]
+
     plot_chr <- chr[chr %in% valid_chrs]
     plot_chr$chr <- factor(plot_chr$chr, levels=valid_chrs)
     plot_sample_dat$Chromosome <- factor(plot_sample_dat$Chromosome, levels=valid_chrs)
