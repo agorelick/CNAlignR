@@ -152,7 +152,8 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
     sample_seg[, highlight:=F]
     sample_seg[segment %in% highlight_seg, highlight:=T]
     sname <- paste0(sample_name,' (purity=',fit$pu,', ploidy=',fit$pl,', loglik=',round(fit$loglik,3),', dipLogR=',fit$dipLogR,')')
-    sex <- obj$ascat.loadData.params$sex
+    build <- obj$main_params$build
+    sex <- unique(obj$main_params$sex)
     highlight <- sample_seg[highlight==T,]
     if(sex=='XX') { 
         valid_chrs <- c(1:22,'X')

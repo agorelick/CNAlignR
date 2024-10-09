@@ -3,7 +3,7 @@
 ##' Load and preprocess SCNA bin data from GLIMPSE2, QDNAseq and snp-pileup workflows.
 ##'
 ##' @export
-get_CNalign_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
+get_CNalign_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, normal_correction=F, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
 
     ## load and preprocess data from GLIMPSE2, QDNAseq and snp-pileup
     preprocessed_data <- preprocess_bin_data(qdnaseq_data=qdnaseq_data,
@@ -18,7 +18,8 @@ get_CNalign_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, 
                                                  blacklisted_regions_file=blacklisted_regions_file,
                                                  LogR_range_allowed=LogR_range_allowed,
                                                  LogR_winsor_percentiles=LogR_winsor_percentiles,
-                                                 LogR_smooth_bins=LogR_smooth_bins)
+                                                 LogR_smooth_bins=LogR_smooth_bins,
+                                                 normal_correction=normal_correction)
 
     ## define temporary file paths
     if(!dir.exists(data_dir)) dir.create(data_dir, recursive=T)
