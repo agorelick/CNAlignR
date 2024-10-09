@@ -355,7 +355,7 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     chr <- genome_data(build)$chr
     d <- merge(d, chr[,c('chr','global_start','global_end'),with=F], by.x='Chromosome', by.y='chr', all.x=T)
     d[,global_pos:=global_start + (Position/1e6)]
-    d <- d[global_pos >= global_start & global_pas <= global_end,]
+    d <- d[global_pos >= global_start & global_pos <= global_end,]
     d$Chromosome <- factor(d$Chromosome, levels=all_chrs)
     d <- d[order(Chromosome,Position),]
     d$bin <- as.integer(factor(d$bin, levels=unique(d$bin)))
