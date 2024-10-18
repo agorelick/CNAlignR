@@ -10,6 +10,18 @@ block_phased_snps <- function(phased_snps, max_phaseable_distance) {
 }
 
 
+##' dir.create.new
+##' @export
+dir.create.new <- function(path) {
+    if(!dir.exists(path)) {
+        message('Creating directory: ', path)
+        dir.create(path, recursive=T)
+    } else {
+        message(path,' already exists.')
+    }
+}
+
+
 ##' write_distance_matrix
 ##' @export
 write_distance_matrix <- function (dm, file) {
@@ -56,6 +68,63 @@ d2m <- function (dt) {
     m <- as.matrix(dt)
     rownames(m) <- rows
     m
+}
+
+
+##' write_refphase_segs
+##'
+##' Output refphase segments as a tsv-file
+##'
+##' @export
+write_refphase_segs <- function (segs, cn_events = NULL, file, output_format = "summary") {
+    columns_to_rename <- c(group_name = "sample_id", seqnames = "chrom")
+    d <- as.data.frame(segs)
+    d <- S4Vectors::rename(d, columns_to_rename)
+    if (output_format == "summary") {
+        columns_to_save <- c("sample_id", "chrom", "start", "end",
+                             "width", "cn_a", "cn_b", "was_cn_updated", "is_ai",
+                             "mirrored_vs_ref", "is_reference", "any_ai", "ai_pvalue",
+                             "effect_size", "diptest_pvalue", "heterozygous_SNP_number",
+                             "homozygous_SNP_number")
+        d_filt <- d[, columns_to_save]
+
+    }
+    else if (output_format == "full") {
+        d <- merge(x = d, y = cn_events, by.x = c("sample_id",
+                                                  "chrom", "start", "end", "width", "cn_a", "cn_b",
+                                                  "is_ai", "mirrored_vs_ref", "is_LOH"), by.y = c("sample_id",
+                                                  "seqnames", "start", "end", "width", "cn_a", "cn_b",
+                                                  "is_ai", "mirrored_vs_ref", "is_LOH"))
+        columns_to_save <- c("sample_id", "purity", "ploidy",
+                             "chrom", "start", "end", "width", "cn_a", "cn_b",
+                             "was_cn_updated", "negative_cn_called", "is_ai",
+                             "mirrored_vs_ref", "is_reference", "any_ai", "ai_pvalue",
+                             "effect_size", "diptest_pvalue", "heterozygous_SNP_number",
+                             "homozygous_SNP_number", "amplification_logRthreshold",
+                             "gain_logRthreshold", "loss_logRthreshold", "meanlogR",
+                             "is_relative_amplification_mean", "is_relative_gain_mean",
+                             "is_relative_loss_mean", "is_relative_amplification_ttest",
+                             "is_relative_gain_ttest", "is_relative_loss_ttest",
+                             "is_absolute_amplification", "is_absolute_gain",
+                             "is_absolute_loss", "is_LOH", "is_homozygous_deletion")
+        d_filt <- d[, columns_to_save]
+
+    }
+    else if (output_format == "copynumbers") {
+        columns_to_save <- c("sample_id", "chrom", "start", "end",
+                             "cn_a", "cn_b")
+        d_filt <- d[, columns_to_save]
+    }
+    else if (output_format == "copynumbers_int") {
+        columns_to_save <- c("sample_id", "chrom", "start", "end",
+                             "cn_a_integer", "cn_b_integer")
+        d_filt <- d[, columns_to_save]
+        names(d_filt) <- gsub('_integer','',names(d_filt))
+    }
+    else {
+        stop("output_format has to be in ['summary', 'full', 'copynumbers']")
+    }
+    utils::write.table(d_filt, file = file, sep = "\t", quote = FALSE, row.names = FALSE)
 }
 
 
