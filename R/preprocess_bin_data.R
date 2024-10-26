@@ -276,16 +276,21 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
         # from ASCAT https://github.com/VanLoo-lab/ascat/blob/master/ASCAT/R/ascat.prepareHTS.R 
         # For males, chrX needs to be adjusted as logR baseline will be 0 because of T/N ratio
         if (sex=="XY") {
+
             message('Adjusting LogR in chrX for male.')
-            # PAR1 and PAR2 information should be a mix of chrX and chrY so we should expect 1+1 (1 from X and 1 from Y).
+            # PAR1 and PAR2 information should be a mix of chrX and chrY so we should expect 1+1 (1 copy from X and 1 copy from Y).
             # nonPAR should be X-specific and baseline is 1+0 so logR needs to be decreased according to gamma parameter (ascat.runAscat)
             if (build=="hg19") {
-                nonPAR=c(2699521, 154931043)
+                XnonPAR=c(2699521, 154931043)
+                YnonPAR=c(2699521, 59034049)
             } else if (build=="hg38") {
-                nonPAR=c(2781480, 155701382)
+                XnonPAR=c(2781480, 155701382)
+                YnonPAR=c(2781480, 56887902)
             }
-            nonPAR=which(d$Chromosome %in% c("X", "chrX") & d$Position>=nonPAR[1] & d$Position<=nonPAR[2])
-            d$LogR[nonPAR]=d$LogR[nonPAR]-1
+            XnonPAR=which(d$Chromosome %in% c("X", "chrX") & d$Position>=XnonPAR[1] & d$Position<=XnonPAR[2])
+            YnonPAR=which(d$Chromosome %in% c("Y", "chrY") & d$Position>=YnonPAR[1] & d$Position<=YnonPAR[2])
+            d$LogR[XnonPAR]=d$LogR[XnonPAR]-1
+            d$LogR[YnonPAR]=d$LogR[YnonPAR]-1
         }
     }
 
