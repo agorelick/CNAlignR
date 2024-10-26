@@ -254,7 +254,7 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     d[,c('start','end','arm_start','arm_end'):=NULL]
     d[,charm:=paste0(Chromosome,arm)]
 
-    if(normal_correction==F) {
+    if(normal_correction==0) {
         ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
         .get_LogR <- function(d) {
             mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
@@ -277,7 +277,7 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
         # For males, chrX needs to be adjusted as logR baseline will be 0 because of T/N ratio
         if (sex=="XY") {
 
-            message('Adjusting LogR in chrX for male.')
+            message('Adjusting LogR in chrX,Y PARs for male.')
             # PAR1 and PAR2 information should be a mix of chrX and chrY so we should expect 1+1 (1 copy from X and 1 copy from Y).
             # nonPAR should be X-specific and baseline is 1+0 so logR needs to be decreased according to gamma parameter (ascat.runAscat)
             if (build=="hg19") {
