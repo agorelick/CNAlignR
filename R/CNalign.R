@@ -1,6 +1,9 @@
-##' do_CNalign
+##' CNalign
+##'
+##' Determine purity and ploidy values for multiple tumor samples with shared ancestry. This function uses the GuRoBi solver to determine purity/ploidy values for each sample that will *maximize* the number of segments with the same (allele-specific) integer copy numbers in at least rho% of samples. 
+##'
 ##' @export
-do_CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_homdels=0, max_homdels=3, t_diff=0.05, t_err=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, assume_wgd=F, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA) {
+CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_homdels=0, max_homdels=3, t_diff=0.05, t_err=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, assume_wgd=F, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA) {
     require(reticulate)
     require(lubridate)
     if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")

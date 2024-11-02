@@ -1,0 +1,25 @@
+name: CNalign
+channels:
+  - conda-forge
+dependencies:
+  - conda-forge::r-base=4.4.1
+  - bioconda::samtools
+  - conda-forge::r-data.table
+  - conda-forge::r-reticulate
+  - gurobi::gurobi
+  - conda-forge::r-devtools
+  - conda-forge::r-cowplot
+  - conda-forge::r-ape
+  - conda-forge::r-phangorn
+  - conda-forge::r-randomforest
+  - conda-forge::r-readxl
+  - conda-forge::r-pheatmap
+  - conda-forge::r-caper
+  - conda-forge::r-lubridate
+  - conda-forge::r-phytools
+  - conda-forge::r-desctools
+  - conda-forge::r-vegan
+  - conda-forge::pandas
+  - conda-forge::r-rjson
+  - conda-forge::r-reshape2
+  - conda-forge::r-ggplot2

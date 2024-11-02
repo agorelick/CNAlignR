@@ -20,6 +20,7 @@ get_CNalign_obj_for_bin_data(
   LogR_range_allowed = c(-3, 3),
   LogR_winsor_percentiles = c(NA, NA),
   LogR_smooth_bins = NA,
+  normal_correction = F,
   multipcf_penalty = 70,
   multipcf_refine = F,
   multipcf_selectAlg = "exact",

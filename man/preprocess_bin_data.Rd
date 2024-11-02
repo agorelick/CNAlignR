@@ -17,7 +17,8 @@ preprocess_bin_data(
   blacklisted_regions_file,
   LogR_range_allowed,
   LogR_winsor_percentiles,
-  LogR_smooth_bins
+  LogR_smooth_bins,
+  normal_correction
 )
 }
 \description{
