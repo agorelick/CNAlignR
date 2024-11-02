@@ -11,9 +11,11 @@
 # output data: same as above with added fields: t_depth, total_copies, mutant_copies, ccf, ccf_lwr95, ccf_upr95
 
 
-
-# Estimate mutant copy number, given observed VAF, purity, and local ploidy
-# Based on PMID 28270531
+##' expected_mutant_copies
+##'
+##' Estimate mutant copy number, given observed VAF, purity, and local ploidy. Based on PMID 28270531
+##'
+##' @export
 expected_mutant_copies = function(t_var_freq, total_copies, purity) {
     if (is.na(total_copies)) {
         as.integer(NA)
@@ -27,14 +29,18 @@ expected_mutant_copies = function(t_var_freq, total_copies, purity) {
 }
 
 
-# Estimate most likely CCF given observed VAF, purity and local ploidy
-# Based on PMID 25877892
-estimate_ccf = function(purity, total_copies, mutant_copies, t_alt_count, t_depth) {
-    expected_vaf  = function(ccf, purity, total_copies) {
+##' estimate_ccf
+##'
+##' Estimate most likely CCF given observed VAF, purity and local ploidy. Based on PMID 25877892
+##'
+##' @export
+estimate_ccf = function(purity, total_copies, mutant_copies, t_alt_count, t_depth, resolution=0.001) {
+
+    expected_vaf = function(ccf, purity, total_copies) {
         purity * ccf * mutant_copies / (2 * (1 - purity) + purity * total_copies)
     }
 
-    ccfs = seq(0.000, 1, 0.001)
+    ccfs = seq(0.000, 1, resolution)
     probs = sapply(ccfs, function(c) {
                    stats::dbinom(t_alt_count, t_depth, expected_vaf(c, purity, total_copies)) })
     probs = probs / sum(probs)

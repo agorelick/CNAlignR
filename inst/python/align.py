@@ -51,10 +51,8 @@ def CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.9
     # Create binary variables match s.t. match{s}==1 if sum_s(err{t,s} <= threshold) == rho*num_samples
     err1 = {}
     err2 = {}
-    err3 = {}
     diff1 = {}
     diff2 = {}
-    diff3 = {}
     n1 = {}
     n2 = {}
     n1int = {}
@@ -96,10 +94,8 @@ def CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.9
             n2int[t, s] = model.addVar(vtype=GRB.INTEGER, name='n2int_'+str(t)+','+str(s))
             err1[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='err1_'+str(t)+','+str(s))
             err2[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='err2_'+str(t)+','+str(s))
-            err3[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='err3_'+str(t)+','+str(s))
             diff1[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='diff1_'+str(t)+','+str(s))
             diff2[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='diff2_'+str(t)+','+str(s))
-            diff3[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='diff3_'+str(t)+','+str(s))
             match_diff1[t, s] = model.addVar(vtype=GRB.BINARY, name='match_diff1_'+str(t)+','+str(s))
             match_err1[t, s] = model.addVar(vtype=GRB.BINARY, name='match_err1_'+str(t)+','+str(s))
             match_diff2[t, s] = model.addVar(vtype=GRB.BINARY, name='match_diff2_'+str(t)+','+str(s))
@@ -207,6 +203,151 @@ def CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.9
     model.setObjective(gb.quicksum(allmatch[s] for s in Segments), GRB.MAXIMIZE)
     model.update()
     model.write('1939.lp')
+    model.optimize()
+    return model
+
+
+
+## non-allele specific version.
+## dat should be a data.frame object from R with columns: "sample", "segment", "logR", "GC"
+def CNalign_tcn(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_homdels=0, max_homdels=3, t_diff=0.05, t_err=0.1, rho=0.85, gurobi_license='', epsilon=1e-4, assume_wgd=False):
+
+    # Create an environment with your WLS license
+    with open(gurobi_license) as file:
+        lines = [line.rstrip() for line in file]
+
+    params = {
+        "WLSACCESSID": lines[3].split('=')[1],
+        "WLSSECRET": lines[4].split('=')[1],
+        "LICENSEID": int(lines[5].split('=')[1]),
+    }
+
+    # Read input data into pandas DataFrame
+    Samples = dat['sample'].unique()
+    Segments = dat['segment'].unique()
+    n_Samples = len(Samples)
+    n_Segments = len(Segments)
+    dat.set_index(['sample','segment'], inplace=True) ## set indices: sample, segment
+
+    ## print out message with input parameters 
+    print('\n-------------------------------------')
+    print('Running optimal alignment with parameters:')
+    print('Gurobi license: '+gurobi_license)  
+    print('ploidy range: ['+str(min_ploidy)+'-'+str(max_ploidy)+']')  
+    print('purity range: ['+str(min_purity)+'-'+str(max_purity)+']')  
+    print('# hom-dels allowed: ['+str(min_homdels)+'-'+str(max_homdels)+']')  
+    print('rho (max fraction of samples with matching segment): '+str(rho))  
+    print('t_diff (max diff from integer CN): '+str(t_diff))  
+    print('t_err (max diff from integer CN): '+str(t_err))  
+    print('# samples in file: '+str(n_Samples))
+    print('# segments in file: '+str(n_Segments))
+    print('-------------------------------------')
+
+    env = gb.Env(params=params)
+    model = gb.Model(env=env)
+
+    pl = {}
+    z = {}  # z=1/pu
+    for t in Samples:
+        pl[t] = model.addVar(vtype=GRB.CONTINUOUS, name='pl_'+str(t), lb=min_ploidy, ub=max_ploidy)
+        z[t] = model.addVar(vtype=GRB.CONTINUOUS, name='z_'+str(t), lb=1/max_purity, ub=1/min_purity)
+
+    # Create auxilary continuous variables err s.t. err{t,s} = |y{t,s} - (x_{t,s}*m_{t}-b{t})|
+    # Create binary variables match s.t. match{s}==1 if sum_s(err{t,s} <= threshold) == rho*num_samples
+    err = {}
+    diff = {}
+    n = {}
+    n_int = {}
+    n_eq0 = {}
+    n_homdel = {}
+    n_bar = {}
+    n_lwr = {}
+    n_upr = {}
+    n_cna = {}
+    is_cna = {}
+    match_diff = {}
+    match_err = {}
+    match = {}
+    match_with_cna = {}
+    allmatch = {}
+
+    ## create segment-level variables
+    for s in Segments:
+        n_bar[s] = model.addVar(vtype=GRB.CONTINUOUS, name='n_bar_'+str(s))
+        allmatch[s] = model.addVar(vtype=GRB.BINARY, name='allmatch_'+str(s))
+
+        ## create segment,sample-level variables
+        for t in Samples:
+            n[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='n_'+str(t)+','+str(s), lb=-0.5+epsilon, ub=1e6) # total copy number cannot be negative
+            n_int[t, s] = model.addVar(vtype=GRB.INTEGER, name='n_int_'+str(t)+','+str(s))
+            err[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='err_'+str(t)+','+str(s))
+            diff[t, s] = model.addVar(vtype=GRB.CONTINUOUS, name='diff_'+str(t)+','+str(s))
+            match_diff[t, s] = model.addVar(vtype=GRB.BINARY, name='match_diff_'+str(t)+','+str(s))
+            match_err[t, s] = model.addVar(vtype=GRB.BINARY, name='match_err_'+str(t)+','+str(s))
+            match[t, s] = model.addVar(vtype=GRB.BINARY, name='match_'+str(t)+','+str(s))
+            match_with_cna[t, s] = model.addVar(vtype=GRB.BINARY, name='match_with_cna'+str(t)+','+str(s))
+            n_eq0[t, s] = model.addVar(vtype=GRB.BINARY, name='n_eq0_'+str(t)+','+str(s))
+            n_lwr[t, s] = model.addVar(vtype="B",name='n_lwr_'+str(t)+','+str(s))
+            n_upr[t, s] = model.addVar(vtype="B",name='n_upr_'+str(t)+','+str(s))
+            n_cna[t, s] = model.addVar(vtype="B",name='n_cna_'+str(t)+','+str(s))
+            is_cna[t, s] = model.addVar(vtype="B",name='is_cna_'+str(t)+','+str(s))
+
+    ## get number of homdel segments in each sample
+    for t in Samples:
+        n_homdel[t] = model.addVar(vtype=GRB.INTEGER, name='n_homdel_'+str(t), lb=min_homdels, ub=max_homdels)
+
+    ## segment,sample-level contraints
+    for s in Segments:
+        for t in Samples:
+            ## calculate values
+            r = dat.loc[t,s].logR
+            g = dat.loc[t,s].GC # germline copies
+            c = 2**r
+            c1 = 2**(r+1)
+
+            # only logR is available, so get total CN {n, NA} s.t. n=total number of copies
+            silence = model.addConstr(n[(t, s)] == z[t]*c*2 + c*pl[t] - 2*c - g*z[t] + g, name='c_n_'+str(t)+','+str(s))
+            silence = model.addConstr(n[(t, s)] - 0.5 + epsilon <= n_int[(t,s)], name='c_n_int_1_'+str(t)+','+str(s))
+            silence = model.addConstr(n_int[(t,s)] - 0.5 <= n[(t,s)], name='c_n_int_2_'+str(t)+','+str(s))
+            silence = model.addGenConstrIndicator(n_eq0[(t, s)], 1, n[(t, s)], GRB.LESS_EQUAL, 0.5-epsilon, name='c_n_eq0_'+str(t)+','+str(s))
+
+    for t in Samples:
+        ## sample-level constraints
+        silence = model.addConstr(n_homdel[t] == gb.quicksum(n_eq0[(t, s)] for s in Segments), name='c_n_homdel_'+str(t))
+
+    for s in Segments:
+        ## segment-level constraints
+        silence = model.addConstr(n_bar[s] == gb.quicksum(n[(t, s)] for t in Samples), name='c_n_bar_'+str(s))
+    
+        for t in Samples:
+            ## segment,sample-level constraints
+            ## for allele1
+            silence = model.addConstr(diff[(t, s)] >= n_int[(t,s)] - n[(t, s)], name='c_diff_'+str(t)+','+str(s))
+            silence = model.addConstr(diff[(t, s)] >= -n_int[(t,s)] + n[(t, s)], name='c_diffneg_'+str(t)+','+str(s))     
+            silence = model.addConstr(err[(t, s)] >= n_bar[s]/n_Samples - n[(t, s)], name='c_err_'+str(t)+','+str(s))
+            silence = model.addConstr(err[(t, s)] >= -n_bar[s]/n_Samples + n[(t, s)], name='c_errneg_'+str(t)+','+str(s))     
+            silence = model.addGenConstrIndicator(match_diff[(t, s)], 1, diff[(t, s)], GRB.LESS_EQUAL, t_diff, name='c_match_diff_'+str(t)+','+str(s))
+            silence = model.addGenConstrIndicator(match_err[(t, s)], 1, err[(t, s)], GRB.LESS_EQUAL, t_err, name='c_match_err_'+str(t)+','+str(s))
+            silence = model.addConstr(match[(t, s)] == match_diff[(t,s)]*match_err[(t, s)], name='c_match_'+str(t)+','+str(s)) ## needs to be ==
+            ## constraint for TCN to have a CNA (not equal 2, or 4 for WGD cases)
+            if assume_wgd is False:
+                silence = model.addGenConstrIndicator(n_upr[(t,s)], 1, n[(t, s)], GRB.GREATER_EQUAL, 2.5) 
+                silence = model.addGenConstrIndicator(n_lwr[(t,s)], 1, n[(t, s)], GRB.LESS_EQUAL, 1.5-epsilon) 
+            else:
+                silence = model.addGenConstrIndicator(n_upr[(t,s)], 1, n[(t, s)], GRB.GREATER_EQUAL, 4.5) 
+                silence = model.addGenConstrIndicator(n_lwr[(t,s)], 1, n[(t, s)], GRB.LESS_EQUAL, 3.5-epsilon) 
+          
+            silence = model.addGenConstrOr(n_cna[(t, s)], [n_lwr[(t, s)], n_upr[(t, s)]], name='c_n_cna_'+str(t)+','+str(s)) 
+            ## segment,sample-level constraint that the segment satisfy conditions to match other samples (and also have CNAs, so we don't just return diploid/tetraploid segments)
+            silence = model.addGenConstrAnd(match_with_cna[(t, s)], [match[(t, s)], n_cna[(t, s)]], name='c_match_with_cna'+str(t)+','+str(s)) 
+
+    # create a variable for the objective function, which is a binary variable for whether 
+    # a segment was a 'match' in at least rho% of samples.
+    for s in Segments:
+        model.addGenConstrIndicator(allmatch[s], 1, gb.quicksum(match_with_cna[(t, s)] for t in Samples), GRB.GREATER_EQUAL, rho*n_Samples, name='c_allmatch_'+str(s))
+
+    model.setObjective(gb.quicksum(allmatch[s] for s in Segments), GRB.MAXIMIZE)
+    model.update()
     model.optimize()
     return model
 
