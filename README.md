@@ -25,7 +25,7 @@ BiocManager::install("Biobase")
 
 ## In R (inside the CNalign environment), install ASCAT v3.1.3 from source code in this github repo
 ```r
-install.packges('inst/ascat-3.1.3.tar.gz',type='src',repos=NULL)
+install.packages('inst/ascat-3.1.3.tar.gz',type='src',repos=NULL)
 ```
 
 ## In R (inside the CNalign environment), install CNalign R package
