@@ -6,7 +6,7 @@
 CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5, max_homdel_mb=20, delta=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA) {
     require(reticulate)
     require(lubridate)
-    #if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
+    if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
 
     ## given input matrices of aligned sample/segment:
     ## 1. logR (required, no NAs)
