@@ -1,25 +1,26 @@
 name: CNalign
 channels:
-  - conda-forge
+  - defaults
 dependencies:
-  - conda-forge::r-base=4.4.1
   - bioconda::samtools
-  - conda-forge::r-data.table
-  - conda-forge::r-reticulate
-  - gurobi::gurobi
-  - conda-forge::r-devtools
-  - conda-forge::r-cowplot
+  - conda-forge::pandas
   - conda-forge::r-ape
+  - conda-forge::r-base=4.4.1
+  - conda-forge::r-caper
+  - conda-forge::r-cowplot
+  - conda-forge::r-data.table
+  - conda-forge::r-desctools
+  - conda-forge::r-devtools
+  - conda-forge::r-ggplot2
+  - conda-forge::r-lubridate
   - conda-forge::r-phangorn
+  - conda-forge::r-pheatmap
+  - conda-forge::r-phytools
   - conda-forge::r-randomforest
   - conda-forge::r-readxl
-  - conda-forge::r-pheatmap
-  - conda-forge::r-caper
-  - conda-forge::r-lubridate
-  - conda-forge::r-phytools
-  - conda-forge::r-desctools
-  - conda-forge::r-vegan
-  - conda-forge::pandas
-  - conda-forge::r-rjson
   - conda-forge::r-reshape2
-  - conda-forge::r-ggplot2
+  - conda-forge::r-reticulate
+  - conda-forge::r-rjson
+  - conda-forge::r-vegan
+  - conda-forge::r-ggrepel
+  - gurobi::gurobi

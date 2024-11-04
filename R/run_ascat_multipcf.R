@@ -124,7 +124,7 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA) 
     obj$segments <- segs
 
     ## print out summary stats about segs here...
-    message('N copy number segments: ',nrow(obj$segment))
+    message('N copy number segments: ',nrow(obj$segments))
    
     tbl <- quantile(obj$segments$seg_length,seq(0,1,by=0.1))
     tbl <- data.table(percentile=names(tbl), length_mb=round(as.numeric(tbl)/1e6,3)) 

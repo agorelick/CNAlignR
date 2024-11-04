@@ -144,7 +144,7 @@ get_loglik <- function(pu, pl, sample_dat, LogR_CDF, BAF_CDF, bin_level=F) {
 
 ##' plot_fit
 ##' @export
-plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, LogR_point_size=0.5, BAF_point_size=0.5) {
+plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, LogR_point_size=0.5, BAF_point_size=0.5, msg=NA) {
     require(cowplot)
     require(ggplot2)
     sample_dat <- obj$marker_level_annotated[[sample_name]]
@@ -201,7 +201,7 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
         geom_point(data=plot_sample_dat[arrow=='up'], color='black',fill='#bfbfbf', size=1,pch=24, stroke=0.25) +
         geom_segment(data=plot_sample_seg,aes(x=global_seg_start_mb,xend=global_seg_end_mb,y=LogR_segmented,yend=LogR_segmented),color='blue',linewidth=0.75,lineend='round') +
         theme_fit(base_size=12) +
-        theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) + labs(x=NULL, y='LogR', subtitle=sname)
+		theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) + labs(x=NULL, y='LogR', subtitle=sname)
 
     p2 <- ggplot(plot_sample_dat, aes(x=global_pos_mb, y=BAF)) +
         scale_x_continuous(breaks=plot_chr$global_midpoint, labels=plot_chr$chr,expand=c(0,0)) +
@@ -245,6 +245,7 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
         theme(legend.position='bottom') +
         labs(x='Genomic posititon', y='Copy number') 
     p <- plot_grid(p1, p2, p3, align='v', ncol=1, rel_heights=c(1.05,1,1.2), axis='lr')
+
     p
 }
 
