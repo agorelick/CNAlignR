@@ -3,7 +3,7 @@
 ##' Do multi-sample segmentation using ascat.asmultipcf. 
 ##'
 ##' @export
-run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA) { 
+run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA, excluded_samples=c()) { 
     chr_levels <- c(1:22,'X','Y')
     if(is.na(seed)) seed <- as.integer(Sys.time())
 
@@ -12,6 +12,17 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA) 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     message('Running ascat.asmultipcf() with penalty=',penalty,', seed=',seed,', selectAlg=',selectAlg,'.')
+
+	if(length(excluded_samples) > 0) {
+		message('-> Excluding samples: ',paste(excluded_samples,collapse=', '),' before segmentation.')
+		obj$marker_level[excluded_samples] <- NULL 
+		obj$marker_level_annotated[excluded_samples] <- NULL 
+		obj$tumor_samples <- obj$tumor_samples[!obj$tumor_samples %in% excluded_samples]
+		obj$ascat.bc$Tumor_LogR[,excluded_samples] <- NULL
+		obj$ascat.bc$Tumor_BAF[,excluded_samples] <- NULL
+		obj$ascat.bc$samples <- obj$ascat.bc$samples[!obj$ascat.bc$samples %in% excluded_samples]
+	}
+
     ascat.mpcf = ascat.asmultipcf(obj$ascat.bc, out.dir=NA, seed=seed, penalty=penalty, refine=refine, selectAlg=selectAlg) 
     obj$ascat.mpcf <- ascat.mpcf
     obj$ascat.asmultipcf.params <- list(penalty=penalty, seed=seed, refine=refine, selectAlg=selectAlg)

@@ -13,6 +13,7 @@ CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_pu
     ## 2. BAF (optional, can be fully/partially NAs)
     ## Determine purity/ploidy values for each sample such that there is maximum number of segments with the same copy number values for >= r% of the samples
 
+	dat$BAF[is.na(dat$BAF)] <- -9
 	if(tcn_only==T) {
 		message('TCN-only alignment')
 		dat$BAF <- -9 # remove all BAFs to force TCN-only alignment
