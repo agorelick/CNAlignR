@@ -4,7 +4,7 @@ import gurobipy as gb
 from gurobipy import GRB
 
 ## dat should be a data.frame object from R with columns: "sample", "segment", "logR", "BAF", "GC", "mb"
-def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=50.0, delta=0.1, rho=0.85, both_alleles_must_align=1, gurobi_license='', epsilon=1e-4):
+def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=50.0, delta=0.1, rho=0.85, both_alleles_must_align=1, gurobi_license='', epsilon=1e-4, aligned_includes_wt=0):
 
     # Create an environment with your WLS license
     with open(gurobi_license) as file:
@@ -36,6 +36,7 @@ def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=
     print('# samples in file: '+str(n_Samples))
     print('# segments in file: '+str(n_Segments))
     print('Both alleles must align: '+str(both_alleles_must_align))
+    print('Wild-type copy numbers included in alignment: '+str(aligned_includes_wt))
     print('-------------------------------------')
 
     env = gb.Env(params=params)
@@ -194,15 +195,16 @@ def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=
                 else:
                     silence = model.addGenConstrOr(match_both[(t, s)], [match1[(t, s)], match2[(t, s)]], name='c_match_both_'+str(t)+','+str(s)) 
 
-                if g==2:
-                    silence = model.addConstr(wt_copies1[s] <= avg_ploidy/2 + 0.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
-                    silence = model.addConstr(wt_copies1[s] >= avg_ploidy/2 - 0.5, name='c_wt_copies1_rev_'+str(s))
-                    silence = model.addConstr(wt_copies2[s] <= avg_ploidy/2 + 0.5 - epsilon, name='c_wt_copies2_fwd_'+str(s))
-                    silence = model.addConstr(wt_copies2[s] >= avg_ploidy/2 - 0.5, name='c_wt_copies2_rev_'+str(s))
-                else:
-                    silence = model.addConstr(wt_copies1[s] <= 1.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
-                    silence = model.addConstr(wt_copies1[s] >= 0.5, name='c_wt_copies1_rev_'+str(s))
-                    silence = model.addConstr(wt_copies2[s] == 0, name='c_wt_copies2'+str(s))
+                if aligned_includes_wt==0:
+                    if g==2:
+                        silence = model.addConstr(wt_copies1[s] <= avg_ploidy/2 + 0.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
+                        silence = model.addConstr(wt_copies1[s] >= avg_ploidy/2 - 0.5, name='c_wt_copies1_rev_'+str(s))
+                        silence = model.addConstr(wt_copies2[s] <= avg_ploidy/2 + 0.5 - epsilon, name='c_wt_copies2_fwd_'+str(s))
+                        silence = model.addConstr(wt_copies2[s] >= avg_ploidy/2 - 0.5, name='c_wt_copies2_rev_'+str(s))
+                    else:
+                        silence = model.addConstr(wt_copies1[s] <= 1.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
+                        silence = model.addConstr(wt_copies1[s] >= 0.5, name='c_wt_copies1_rev_'+str(s))
+                        silence = model.addConstr(wt_copies2[s] == 0, name='c_wt_copies2'+str(s))
 
             else:
                 # only logR is available, so get total CN {n1, NA} s.t. n1=total number of copies
@@ -236,12 +238,13 @@ def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=
                 ## check if the only allele (n1) matches its nearest int
                 silence = model.addConstr(match_both[(t, s)] == match1[(t, s)], name='c_match_both_'+str(t)+','+str(s)) 
 
-                if g==2:
-                    silence = model.addConstr(wt_copies1[s] <= avg_ploidy + 0.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
-                    silence = model.addConstr(wt_copies1[s] >= avg_ploidy - 0.5, name='c_wt_copies1_rev_'+str(s))
-                else:
-                    silence = model.addConstr(wt_copies1[s] <= 1.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
-                    silence = model.addConstr(wt_copies1[s] >= 0.5, name='c_wt_copies1_rev_'+str(s))
+                if aligned_includes_wt==0:
+                    if g==2:
+                        silence = model.addConstr(wt_copies1[s] <= avg_ploidy + 0.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
+                        silence = model.addConstr(wt_copies1[s] >= avg_ploidy - 0.5, name='c_wt_copies1_rev_'+str(s))
+                    else:
+                        silence = model.addConstr(wt_copies1[s] <= 1.5 - epsilon, name='c_wt_copies1_fwd_'+str(s))
+                        silence = model.addConstr(wt_copies1[s] >= 0.5, name='c_wt_copies1_rev_'+str(s))
  
             ## segment,sample-level constraint that both alleles satisfy conditions to match other samples (and also have CNAs, so we don't just return diploid segments)
             silence = model.addGenConstrAnd(match_both_with_cna[(t, s)], [match_both[(t, s)], is_cna[(t, s)]], name='c_match_both_with_cna_'+str(t)+','+str(s)) 

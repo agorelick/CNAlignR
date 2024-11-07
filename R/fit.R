@@ -144,7 +144,7 @@ get_loglik <- function(pu, pl, sample_dat, LogR_CDF, BAF_CDF, bin_level=F) {
 
 ##' plot_fit
 ##' @export
-plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, LogR_point_size=0.5, BAF_point_size=0.5, msg=NA) {
+plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c(), LogR_min=NA, LogR_max=NA, LogR_point_size=0.5, BAF_point_size=0.5) { 
     require(cowplot)
     require(ggplot2)
     sample_dat <- obj$marker_level_annotated[[sample_name]]
@@ -244,8 +244,8 @@ plot_fit <- function(sample_name, fit, obj, build, int_copies=F, highlight_seg=c
         theme_fit(base_size=12) +
         theme(legend.position='bottom') +
         labs(x='Genomic posititon', y='Copy number') 
-    p <- plot_grid(p1, p2, p3, align='v', ncol=1, rel_heights=c(1.05,1,1.2), axis='lr')
 
+    p <- plot_grid(p1, p2, p3, align='v', ncol=1, rel_heights=c(1.05,1,1.2), axis='lr')  
     p
 }
 

@@ -1,9 +1,34 @@
+##' CCFalign
+##' @export
+CCFalign <- function(dat, min_purity=0.05, max_purity=0.95, max_tcn=6, min_ccf_is_clonal=0.9, min_frac_clonal_is_truncal=1.0, gurobi_license='') {
+    require(reticulate)
+    require(lubridate)
+    if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
+
+    ## dat should be a data.frame object from R with columns: "sample", "variant", "vaf", "gc"
+	source_python(py_script)
+	start_time <- now()
+	message('Started CNalign at ',as.character(start_time))
+	m <- do_CCFalign(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, min_ccf_is_clonal=min_ccf_is_clonal, min_frac_clonal_is_truncal=min_frac_clonal_is_truncal, gurobi_license=gurobi_license) 
+	end_time <- now()
+	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
+    message('Ended CNalign at ',as.character(end_time))
+    sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
+    message('Time elapsed: ',sec_elapsed,'s')
+
+    params <- list(min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, min_ccf_is_clonal=min_ccf_is_clonal, min_frac_clonal_is_truncal=min_frac_clonal_is_truncal, gurobi_license=gurobi_license) 
+
+    # return the model object and a list of all the parameters
+    out <- list(m=m, params=params)
+}
+
+
 ##' CNalign
 ##'
 ##' Determine purity and ploidy values for multiple tumor samples with shared ancestry. This function uses the GuRoBi solver to determine purity/ploidy values for each sample that will *maximize* the number of segments with the same (allele-specific) integer copy numbers in at least rho% of samples. 
 ##'
 ##' @export
-CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5, max_homdel_mb=20, delta=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA) {
+CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5, max_homdel_mb=20, delta=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA, aligned_includes_wt=0) {
     require(reticulate)
     require(lubridate)
     if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
@@ -23,14 +48,14 @@ CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_pu
 	source_python(py_script)
 	start_time <- now()
 	message('Started CNalign at ',as.character(start_time))
-	m <- do_CNalign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon)
+	m <- do_CNalign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon, aligned_includes_wt=aligned_includes_wt)
 	end_time <- now()
 	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
     message('Ended CNalign at ',as.character(end_time))
     sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
     message('Time elapsed: ',sec_elapsed,'s')
 
-    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon, tcn_only=tcn_only, run_date=run_date)
+    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon, tcn_only=tcn_only, run_date=run_date, aligned_includes_wt=aligned_includes_wt)
 
     # return the model object and a list of all the parameters
     out <- list(m=m, params=params)
