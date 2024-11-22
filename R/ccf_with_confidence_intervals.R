@@ -16,7 +16,7 @@
 ##' Estimate mutant copy number, given observed VAF, purity, and local ploidy. Based on PMID 28270531
 ##'
 ##' @export
-expected_mutant_copies = function(t_var_freq, total_copies, purity) {
+expected_mutant_copies = function(t_var_freq, total_copies, purity, round.mcn=T) {
     if (is.na(total_copies)) {
         as.integer(NA)
     } else {
@@ -24,7 +24,7 @@ expected_mutant_copies = function(t_var_freq, total_copies, purity) {
         mu = t_var_freq * (1 / purity) * (purity * total_copies + (1 - purity) * 2)
         alt_copies = ifelse(mu < 1, 1, abs(mu)) # mu < 1 ~ 1, mu >= 1 ~ abs(mu)
         alt_copies = ifelse(alt_copies > total_copies, total_copies, alt_copies) # don't allow expected number greater than the total
-        round(alt_copies)
+       ifelse(round.mcn, round(alt_copies), alt_copies)
     }
 }
 

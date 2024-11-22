@@ -1,3 +1,43 @@
+##' get_fit_with_maf
+##' @export
+get_fit_with_maf <- function(sample_name, obj, maf, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, min_ploidy=1.7, max_ploidy=5, min_purity=0.05, max_purity=0.95, cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025, included_chrs=c()) {
+    require(parallel)
+
+	fits <- get_fit(sample_name, obj, dipLogR=dipLogR, purity=purity, ploidy=ploidy, homdel_mb_max=homdel_mb_max, neg_mb_max=neg_mb_max, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, cores=cores, best_only=F, bin_level=F, purity_stepsize=purity_stepsize, ploidy_stepsize=ploidy_stepsize, included_chrs=included_chrs)
+	fits$mut_loglik <- as.numeric(NA)
+
+	segs <- obj$segment_level[[sample_name]][,c('Chromosome','seg_start','seg_end','LogR_segmented','BAF_segmented'),with=F]
+	setkey(segs,'Chromosome','seg_start','seg_end')
+
+	dat <- maf[Tumor_Sample_Barcode==sample_name,c('Chromosome','Start_Position','End_Position','tm','vaf','t_alt_count','t_depth','germline_copies')]
+	setkey(dat,'Chromosome','Start_Position','End_Position')
+	dat <- foverlaps(dat, segs, type='any')
+	v <- function(p,m,t,g)	(p*m) / (p*t + (1-p)*g)
+
+	message('Testing the likelihood of each fit given presumed clonal mutations ...')
+	## for each purity/ploidy, get the na,nb values at each mutation in the MAF
+	check_fit_at_mutations <- function(i, fits, dat) {
+		pu <- fits$pu[i]; pl <- fits$pl[i]
+		dat$pu <- pu; dat$pl <- pl
+		ascn <- get_na_nb(pu, pl, dat, rfield='LogR_segmented', bfield='BAF_segmented', gfield='germline_copies')
+		ascn[is.na(nb), nb:=0]
+		ascn$tcn.i <- round(ascn$na+ascn$nb)
+		ascn[, mcn.i := expected_mutant_copies(vaf, tcn.i, pu, round=T), by = tm]
+		ascn$binomial_param <- v(ascn$pu, ascn$mcn.i, ascn$tcn.i, ascn$germline_copies)	
+		likelihood_per_variant_given_p_m_t <- dbinom(ascn$t_alt_count, ascn$t_depth, ascn$binomial_param, log=F)	
+		ll <- sum(log(likelihood_per_variant_given_p_m_t))	
+		fits$mut_loglik[i] <- ll
+		fits[i,]
+	}
+
+	l <- mclapply(1:nrow(fits), check_fit_at_mutations, fits, dat, mc.cores=cores)
+	rbindlist(l)
+}
+
+
+
+
+
 ##' get_fit
 ##' @export
 get_fit <- function(sample_name, obj, dipLogR=NA, purity=NA, ploidy=NA, homdel_mb_max=100, neg_mb_max=0, min_ploidy=1.7, max_ploidy=5, min_purity=0.05, max_purity=0.95, cores=1, best_only=T, bin_level=F, purity_stepsize=0.025, ploidy_stepsize=0.025, included_chrs=c()) {
