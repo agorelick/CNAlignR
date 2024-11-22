@@ -4,7 +4,15 @@
 \alias{run_ascat_multipcf}
 \title{run_ascat_multipcf}
 \usage{
-run_ascat_multipcf(obj, build, penalty, refine, selectAlg, seed = NA)
+run_ascat_multipcf(
+  obj,
+  build,
+  penalty,
+  refine,
+  selectAlg,
+  seed = NA,
+  excluded_samples = c()
+)
 }
 \description{
 Do multi-sample segmentation using ascat.asmultipcf.

@@ -14,8 +14,7 @@ plot_fit(
   LogR_min = NA,
   LogR_max = NA,
   LogR_point_size = 0.5,
-  BAF_point_size = 0.5,
-  msg = NA
+  BAF_point_size = 0.5
 )
 }
 \description{

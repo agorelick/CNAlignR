@@ -18,7 +18,8 @@ CNalign(
   epsilon = 1e-04,
   tcn_only = F,
   gurobi_license = "~/gurobi.lic",
-  py_script = NA
+  py_script = NA,
+  aligned_includes_wt = 0
 )
 }
 \description{

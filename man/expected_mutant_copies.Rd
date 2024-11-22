@@ -4,7 +4,7 @@
 \alias{expected_mutant_copies}
 \title{expected_mutant_copies}
 \usage{
-expected_mutant_copies(t_var_freq, total_copies, purity)
+expected_mutant_copies(t_var_freq, total_copies, purity, round.mcn = T)
 }
 \description{
 Estimate mutant copy number, given observed VAF, purity, and local ploidy. Based on PMID 28270531
