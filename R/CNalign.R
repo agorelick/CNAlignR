@@ -1,6 +1,6 @@
 ##' CCFalign
 ##' @export
-CCFalign <- function(dat, min_purity=0.05, max_purity=0.95, max_tcn=6, min_ccf_is_clonal=0.9, min_frac_clonal_is_truncal=1.0, gurobi_license='', py_script=NA) {
+CCFalign <- function(dat, min_purity=0.05, max_purity=0.95, max_tcn=6, min_ccf_is_clonal=0.9, min_frac_clonal_is_truncal=1.0, gurobi_license='', rho=0.1, delta=1.0, py_script=NA) {
     require(reticulate)
     require(lubridate)
     if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
@@ -10,7 +10,7 @@ CCFalign <- function(dat, min_purity=0.05, max_purity=0.95, max_tcn=6, min_ccf_i
 	start_time <- now()
 	message('Started CNalign at ',as.character(start_time))
 	#m <- do_CCFalign(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, min_ccf_is_clonal=min_ccf_is_clonal, min_frac_clonal_is_truncal=min_frac_clonal_is_truncal, gurobi_license=gurobi_license) 
-	m <- do_CCFalign2(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, gurobi_license=gurobi_license) 
+    m <- do_CCFalign(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, rho=rho, delta=delta, gurobi_license=gurobi_license)
 
 	end_time <- now()
 	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
