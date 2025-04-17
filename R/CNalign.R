@@ -1,36 +1,10 @@
-##' CCFalign
-##' @export
-CCFalign <- function(dat, min_purity=0.05, max_purity=0.95, max_tcn=6, min_ccf_is_clonal=0.9, min_frac_clonal_is_truncal=1.0, gurobi_license='', rho=0.1, delta=1.0, py_script=NA) {
-    require(reticulate)
-    require(lubridate)
-    if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
-
-    ## dat should be a data.frame object from R with columns: "sample", "variant", "vaf", "gc"
-	source_python(py_script)
-	start_time <- now()
-	message('Started CNalign at ',as.character(start_time))
-	#m <- do_CCFalign(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, min_ccf_is_clonal=min_ccf_is_clonal, min_frac_clonal_is_truncal=min_frac_clonal_is_truncal, gurobi_license=gurobi_license) 
-    m <- do_CCFalign(dat, min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, rho=rho, delta=delta, gurobi_license=gurobi_license)
-
-	end_time <- now()
-	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
-    message('Ended CNalign at ',as.character(end_time))
-    sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
-    message('Time elapsed: ',sec_elapsed,'s')
-
-    params <- list(min_purity=min_purity, max_purity=max_purity, max_tcn=max_tcn, min_ccf_is_clonal=min_ccf_is_clonal, min_frac_clonal_is_truncal=min_frac_clonal_is_truncal, gurobi_license=gurobi_license) 
-
-    # return the model object and a list of all the parameters
-    out <- list(m=m, params=params)
-}
-
-
 ##' CNalign
 ##'
 ##' Determine purity and ploidy values for multiple tumor samples with shared ancestry. This function uses the GuRoBi solver to determine purity/ploidy values for each sample that will *maximize* the number of segments with the same (allele-specific) integer copy numbers in at least rho% of samples. 
 ##'
 ##' @export
-CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5, max_homdel_mb=20, delta=0.1, rho=0.85, both_alleles_must_align=1, epsilon=1e-4, tcn_only=F, gurobi_license='~/gurobi.lic', py_script=NA, aligned_includes_wt=0) {
+CNalign <- function(dat, gurobi_license='~/gurobi.loc', min_ploidy=1.7, max_ploidy=3.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=100.0, delta_tcn_to_int=0.2, delta_tcn_to_avg=0.1, delta_tcnavg_to_int=0.05, delta_mcn_to_int=0.2, delta_mcn_to_avg=0.2, delta_mcnavg_to_int=0.2, rho=1.0, normal_baseline=2, timeout=10*60, min_cna_segments_per_sample=5, mcn_weight=0.5) {
+                
     require(reticulate)
     require(lubridate)
     if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
@@ -50,21 +24,34 @@ CNalign <- function(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_pu
 	source_python(py_script)
 	start_time <- now()
 	message('Started CNalign at ',as.character(start_time))
-	m <- do_CNalign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon, aligned_includes_wt=aligned_includes_wt)
+
+    m <- do_CNalign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, epsilon=epsilon, normal_baseline=normal_baseline, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight)
+
 	end_time <- now()
 	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
     message('Ended CNalign at ',as.character(end_time))
     sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
     message('Time elapsed: ',sec_elapsed,'s')
 
-    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta=delta, rho=rho, both_alleles_must_align=both_alleles_must_align, gurobi_license=gurobi_license, epsilon=epsilon, tcn_only=tcn_only, run_date=run_date, aligned_includes_wt=aligned_includes_wt)
+    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, epsilon=epsilon, normal_baseline=normal_baseline, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight)
 
     # return the model object and a list of all the parameters
     out <- list(m=m, params=params)
 }
 
 
-get_solutions <- function(m) {
+parse_brackets <- function(text) { 
+    require(stringr)
+    before <- str_extract(text, ".*?(?=\\[)")
+    inside <- str_extract(text, "(?<=\\[).*?(?=\\])")
+    after <- str_replace(text, ".*\\] ?", "")
+    list(text=text, before=before, inside=inside, after=after)
+}
+
+
+
+get_solutions <- function(m, num_solutions=NA, ncpus=1) { 
+    require(parallel)
     get_values_for_solution <- function(solnumber, m) {
         m$setParam('SolutionNumber', solnumber)
         vars <- m$getVars()
@@ -76,67 +63,50 @@ get_solutions <- function(m) {
         }
         values_for_solution <- rbindlist(lapply(1:l, extract_var, vars))
         values_for_solution$solution <- solnumber
+        vars <- rbindlist(lapply(values_for_solution$name, parse_brackets))
+        values_for_solution <- cbind(values_for_solution, vars)
+        values_for_solution[!is.na(before), category:=before]
+        values_for_solution[is.na(before), category:=text]
+        values_for_solution[!is.na(inside), subject:=inside]
         message('Solution ',solnumber,' extracted.')
+        values_for_solution[,c('text','before','inside','after'):=NULL]
         values_for_solution
     }
-    solutions <- 0:m$SolCount
+    if(is.na(num_solutions)) {
+        solutions <- 0:m$SolCount
+    } else {
+        solutions <- 0:(num_solutions-1)   
+    }
+
     message('Extracting values for ',length(solutions),' solutions ...')
-    result_list <- lapply(solutions, get_values_for_solution, m)
+    result_list <- mclapply(solutions, get_values_for_solution, m, mc.cores=ncpus)
     result <- rbindlist(result_list, fill=T)
-	result <- data.table::dcast(name ~ solution, value.var='value', data=result)
+    result$solution <- paste0('sol',result$solution)
+    solution_labels <- unique(result$solution)
+    result$solution <- factor(result$solution, levels=solution_labels)
+    result[category=='z', category:='pu']
+    result[category=='pu', value:=1/value]
+    result <- data.table::dcast(name + category + subject ~ solution, value.var='value', data=result)
 
-	# extract purity solutions
-	pu <- d2m(result[grepl('z_',name),])
-	pu <- 1 / pu
-	rownames(pu) <- gsub('z_','pu_',rownames(pu))
-	pu <- cbind(name=rownames(pu), as.data.table(pu))
+    # extract purity solutions
+    pu <- result[category=='pu',c('subject',solution_labels),with=F]
+    pl <- result[category=='pl',c('subject',solution_labels),with=F]
+    allmatch <- result[category=='allmatch',c('subject',solution_labels),with=F]
 
-	# ploidy solutions
-	pl <- result[grepl('pl_',name),]
-
-	# OTHER VARIANTS
-	other <- result[!name %in% c(pu$name,pl$name),] 	
-	result <- rbind(pu, pl, other)
-
-	# return everything
-	result
-}
-
-
-get_pu_pl_solutions <- function(result) {
-	## ploidy values for each solution
-    pl <- result[grepl('pl_',name),]
-    pl <- cbind(sample=gsub('pl_','',pl$name), pl)
-    pl[,name:=NULL]
-
-    ## purity values for each solution
-    pu <- result[grepl('z_',name),]
-    pu <- cbind(sample=gsub('z_','',pu$name), pu)
-    pu[,name:=NULL]
-    pu[,2:ncol(pu)] <- 1 / pu[,2:ncol(pu),with=F]
-
-    ## 'allmatch' values for each segment, for each solution
-    x <- result[grepl('allmatch_seg',name),]
-    x <- cbind(segment=round(as.numeric(gsub('allmatch_seg','',x$name))), x)
-    x <- x[order(segment),]
-    x[,name:=NULL]
-
-    ## subset for UNIQUE solutions based only on allmatch, pl, and z values
-    solutions <- names(x)[2:ncol(x)]
-
-    if(length(solutions) > 1) {
-        message('Reducing to unique solutions based on pu, pl, x values ...')
-        current_pl <- pl[['0']]
-        current_pu <- pu[['0']]
-        current_x <- x[['0']]
+    # subset for unique solutions
+    if(length(solution_labels) > 1) {
+        message('Reducing to unique solutions based on pu[sample], pl[sample], allmatch[segment] values ...')
+        current_pl <- pl[['sol0']]
+        current_pu <- pu[['sol0']]
+        current_allmatch <- allmatch[['sol0']]
         unique_solutions <- rep(as.logical(NA), length(solutions))
-        names(unique_solutions) <- solutions
-        unique_solutions['0'] <- T
-        for(s in solutions[2:length(solutions)]) {
+        names(unique_solutions) <- solution_labels
+        unique_solutions['sol0'] <- T
+        for(s in solution_labels[2:length(solutions)]) {
             next_pl <- pl[[s]]
             next_pu <- pu[[s]]
-            next_x <- x[[s]]
-            if(any(next_pl!=current_pl) | any(next_pu!=current_pu) | any(next_x!=current_x)) {
+            next_allmatch <- allmatch[[s]]
+            if(any(next_pl!=current_pl) | any(next_pu!=current_pu) | any(next_allmatch!=current_allmatch)) {
                 unique_solutions[s] <- T  
             } else {
                 unique_solutions[s] <- F    
@@ -145,19 +115,19 @@ get_pu_pl_solutions <- function(result) {
         duplicate_solutions <- names(unique_solutions[unique_solutions==F])
         pl[,(duplicate_solutions):=NULL]
         pu[,(duplicate_solutions):=NULL]
-        x[,(duplicate_solutions):=NULL]
-        #ascn <- ascn[!solution %in% duplicate_solutions]
-        message('Removed duplicate solutions: ',paste(duplicate_solutions,collapse=', '))
+        allmatch[,(duplicate_solutions):=NULL]
     }
 
-    #ascn[,tcn:=na+nb]
-    #ascn[na >= nb,mcn:=nb]
-    #ascn[na < nb,mcn:=na]
-
-    #pu <- cbind(variable='purity', pu)
-    #pl <- cbind(variable='ploidy', pl)
-    #x <- cbind(variable='allmatch', x)
-    list(purity=pu, ploidy=pl, allmatch=x)
+    sol0_highlight <- as.integer(gsub('seg','',allmatch[allmatch$sol0==1]$subject))
+    sol0_pu <- pu[,c('subject','sol0'),with=F]
+    sol0_pu$variable <- 'pu'
+    sol0_pl <- pl[,c('subject','sol0'),with=F]
+    sol0_pl$variable <- 'pl'
+    sol0_fits <- rbind(sol0_pu, sol0_pl)
+    sol0_fits <- data.table::dcast(subject ~ variable, value.var='sol0', data=sol0_fits)        
+    names(sol0_fits)[1] <- 'sample'
+    list(sol0_fits=sol0_fits, sol0_highlight=sol0_highlight, pu=pu, pl=pl, allmatch=allmatch)
 }
+
 
 
