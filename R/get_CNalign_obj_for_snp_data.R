@@ -6,10 +6,10 @@
 get_CNalign_obj_for_snp_data <- function(ascat_dir, sex, build, normal_sample, GCcontentfile=NULL, replictimingfile=NULL, multipcf_penalty=300, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA, output_dir='.', obj_filename='CNalign_obj.Rdata', Tumor_LogR_filename='Tumor_LogR.txt', Tumor_BAF_filename='Tumor_BAF.txt', Germline_LogR_filename='Germline_LogR.txt', Germline_BAF_filename='Germline_BAF.txt') {
 
     ascat_files <- dir(ascat_dir,full.names=T)
-    Tumor_LogR_files <- grep(ascat_files,'Tumor_LogR.txt', value=T)
-    Tumor_BAF_files <- grep(ascat_files,'Tumor_BAF.txt', value=T)
-    Germline_LogR_files <- grep(ascat_files,'Germline_LogR.txt', value=T)
-    Germline_BAF_files <- grep(ascat_files,'Germline_BAF.txt', value=T)
+    Tumor_LogR_files <- grep(paste0(normal_sample,'_Tumor_LogR.txt'), ascat_files, value=T)
+    Tumor_BAF_files <- grep(paste0(normal_sample,'_Tumor_BAF.txt'), ascat_files, value=T)
+    Germline_LogR_files <- grep(paste0(normal_sample,'_Germline_LogR.txt'), ascat_files, value=T)
+    Germline_BAF_files <- grep(paste0(normal_sample,'_Germline_BAF.txt'), ascat_files, value=T)
 
     get_data <- function(file) {
         if(file.exists(file)) {
@@ -43,7 +43,7 @@ get_CNalign_obj_for_snp_data <- function(ascat_dir, sex, build, normal_sample, G
 
     ## get BAF data 
     l_Tumor_BAF <- lapply(Tumor_BAF_files, get_data)
-    umor_BAF <- rbindlist(l_Tumor_BAF)
+    Tumor_BAF <- rbindlist(l_Tumor_BAF)
     Tumor_BAF$Chromosome <- factor(Tumor_BAF$Chromosome, levels=c(1:22,'X','Y'))
     l_Germline_BAF <- lapply(Germline_BAF_files, get_data)
     Germline_BAF <- rbindlist(l_Germline_BAF)

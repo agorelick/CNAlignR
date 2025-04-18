@@ -33,8 +33,8 @@ args <- parser$parse_args()
 # run get_CNalign_obj_for_snp_data
 CNalign::get_CNalign_obj_for_snp_data(ascat_dir=args$ascat_dir, 
                                       sex=args$sex, 
-                                      build=args$build, 
-                                      normal_sample=args$normal_sample, 
+                                      build=args$genome, 
+                                      normal_sample=args$normal_name,
                                       GCcontentfile=args$gc_file, 
                                       replictimingfile=args$rt_file, 
                                       multipcf_penalty=args$penalty, 
