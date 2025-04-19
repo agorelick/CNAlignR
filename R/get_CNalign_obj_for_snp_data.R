@@ -100,13 +100,14 @@ get_CNalign_obj_for_snp_data <- function(ascat_dir, sex, build, normal_sample, G
             
     if(cleanup==T) {
         message('Cleaning up temporary files.')
-        trash <- sapply(c(Tumor_LogR_file,Tumor_BAF_file,Germline_LogR_file,Germline_BAF_file), file.remove)
+        trash <- sapply(c(Tumor_LogR_filename,Tumor_BAF_filename,Germline_LogR_filename,Germline_BAF_filename), file.remove)
     }
 
-    main_params <- list(ascat_dir=ascat_dir, sex=sex, build=build, normal_sample=normal_sample, GCcontentfile=GCcontentfile, replictimingfile=replictimingfile, multipcf_penalty=multipcf_penalty, multipcf_refine=multipcf_refine, multipcf_selectAlg=multipcf_selectAlg, cleanup=cleanup, 
-                        seed=seed, output_dir=output_dir, obj_filename=obj_filename, Tumor_LogR_filename=Tumor_LogR_filename, Tumor_BAF_filename=Tumor_BAF_filename, Germline_LogR_filename=Germline_LogR_filename, Germline_BAF_filename=Germline_BAF_filename)
+    ## add a list with the parameters to the output object so that we have a record of what values were used
+    main_params <- list(ascat_dir=ascat_dir, sex=sex, build=build, normal_sample=normal_sample, GCcontentfile=GCcontentfile, replictimingfile=replictimingfile, multipcf_penalty=multipcf_penalty, multipcf_refine=multipcf_refine, multipcf_selectAlg=multipcf_selectAlg, cleanup=cleanup, seed=seed, output_dir=output_dir, obj_filename=obj_filename, Tumor_LogR_filename=Tumor_LogR_filename, Tumor_BAF_filename=Tumor_BAF_filename, Germline_LogR_filename=Germline_LogR_filename, Germline_BAF_filename=Germline_BAF_filename)
     obj$main_params <- main_params
-    
+   
+    # save object 
     message('Saving CNalign data object to: ', file)
     output_path <- file.path(output_dir,obj_filename)
     saveRDS(obj, file=output_path)
