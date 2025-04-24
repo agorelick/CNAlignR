@@ -69,47 +69,34 @@ get_CNalign_obj_for_snp_data <- function(ascat_dir, sex, build, normal_sample, G
     n_BAF <- x_BAF[,c('Chromosome','Position',normal_sample)]
 
     if(!dir.exists(output_dir)) dir.create(output_dir)
-    Tumor_LogR_file <- file.path(output_dir,Tumor_LogR_filename)
-    Tumor_BAF_file <- file.path(output_dir,Tumor_BAF_filename)
-    Germline_LogR_file <- file.path(output_dir,Germline_LogR_filename)
-    Germline_BAF_file <- file.path(output_dir,Germline_BAF_filename)
-    write.table(t_LogR, file = Tumor_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(n_LogR, file = Germline_LogR_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(t_BAF, file = Tumor_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
-    write.table(n_BAF, file = Germline_BAF_file, sep = "\t", quote = FALSE, col.names = NA)
+    Merged_Tumor_LogR_filename <- file.path(output_dir,Tumor_LogR_filename)
+    Merged_Tumor_BAF_filename <- file.path(output_dir,Tumor_BAF_filename)
+    Merged_Germline_LogR_filename <- file.path(output_dir,Germline_LogR_filename)
+    Merged_Germline_BAF_filename <- file.path(output_dir,Germline_BAF_filename)
+    write.table(t_LogR, file = Merged_Tumor_LogR_filename, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(n_LogR, file = Merged_Germline_LogR_filename, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(t_BAF, file = Merged_Tumor_BAF_filename, sep = "\t", quote = FALSE, col.names = NA)
+    write.table(n_BAF, file = Merged_Germline_BAF_filename, sep = "\t", quote = FALSE, col.names = NA)
 
     ## get snp-level data
-    message('Running preprocess_multipcf_data() ...')
-    obj <- prep_data_for_multipcf(Tumor_LogR_file=Tumor_LogR_filename,
-                                  Tumor_BAF_file=Tumor_BAF_filename,
-                                  Germline_LogR_file=Germline_LogR_filename,
-                                  Germline_BAF_file=Germline_BAF_filename,
+    message('Running prep_data_for_multipcf() ...')
+    obj <- prep_data_for_multipcf(Tumor_LogR_file=Merged_Tumor_LogR_filename,
+                                  Tumor_BAF_file=Merged_Tumor_BAF_filename,
+                                  Germline_LogR_file=Merged_Germline_LogR_filename,
+                                  Germline_BAF_file=Merged_Germline_BAF_filename,
                                   sex=sex,
                                   build=build,
                                   GCcontentfile=GCcontentfile,
                                   replictimingfile=replictimingfile)
 
-    ## run multi-sample segmentation with default parameters
-    message('Running run_ascat_multipcf() ...')
-    obj <- run_ascat_multipcf(obj=obj,
-                              build=build,
-                              penalty=multipcf_penalty,
-                              refine=multipcf_refine,
-                              selectAlg=multipcf_selectAlg,
-                              seed=seed)
-            
-    if(cleanup==T) {
-        message('Cleaning up temporary files.')
-        trash <- sapply(c(Tumor_LogR_filename,Tumor_BAF_filename,Germline_LogR_filename,Germline_BAF_filename), file.remove)
-    }
-
     ## add a list with the parameters to the output object so that we have a record of what values were used
-    main_params <- list(ascat_dir=ascat_dir, sex=sex, build=build, normal_sample=normal_sample, GCcontentfile=GCcontentfile, replictimingfile=replictimingfile, multipcf_penalty=multipcf_penalty, multipcf_refine=multipcf_refine, multipcf_selectAlg=multipcf_selectAlg, cleanup=cleanup, seed=seed, output_dir=output_dir, obj_filename=obj_filename, Tumor_LogR_filename=Tumor_LogR_filename, Tumor_BAF_filename=Tumor_BAF_filename, Germline_LogR_filename=Germline_LogR_filename, Germline_BAF_filename=Germline_BAF_filename)
+    main_params <- list(ascat_dir=ascat_dir, sex=sex, build=build, normal_sample=normal_sample, GCcontentfile=GCcontentfile, replictimingfile=replictimingfile, output_dir=output_dir, obj_filename=obj_filename, Tumor_LogR_filename=Tumor_LogR_filename, Tumor_BAF_filename=Tumor_BAF_filename, Germline_LogR_filename=Germline_LogR_filename, Germline_BAF_filename=Germline_BAF_filename)
+
     obj$main_params <- main_params
    
     # save object 
-    message('Saving CNalign data object to: ', file)
-    output_path <- file.path(output_dir,obj_filename)
+    output_path <- file.path(output_dir, obj_filename)
+    message('Saving CNalign data object to: ', output_path)
     saveRDS(obj, file=output_path)
     
 }

@@ -13,20 +13,13 @@ parser$add_argument("--normal_name", type="character", help="Normal sample name"
 parser$add_argument("--gc_file", type="character", help="GCcontentfile", default=NULL)
 parser$add_argument("--rt_file", type="character", help="replictimingfile", default=NULL)
 
-# defaults available
-parser$add_argument("--penalty", type="integer", help="multipcf penalty", default=300)
-parser$add_argument("--refine", type="logical", help="multipcf refine", default=FALSE)
-parser$add_argument("--selectalg", type="character", help="multipcf algorithm ('exact' or 'fast')", default='exact')
-parser$add_argument("--cleanup", type="logical", help="remove temporary files for multipcf", default=FALSE)
-parser$add_argument("--seed", type="numeric", help="multipcf seed", default=42)
-
 # output paths/filenames
 parser$add_argument("--output_dir", type="character", help="output directory (where tmp files and data obj will go)", default='.')
 parser$add_argument("--obj_file", type="character", help="CNalign data object filename", default='CNalign_obj.Rdata')
-parser$add_argument("--tumorlogr_file", type="character", help="Tumor LogR file for multipcf", default='Tumor_LogR.txt')
-parser$add_argument("--tumorbaf_file", type="character", help="Tumor BAF file for multipcf", default='Tumor_BAF.txt')
-parser$add_argument("--germlinelogr_file", type="character", help="Germline LogR file for multipcf", default='Germline_LogR.txt')
-parser$add_argument("--germlinebaf_file", type="character", help="Germline BAF file for multipcf", default='Germline_BAF.txt')
+parser$add_argument("--tumorlogr_file", type="character", help="Tumor LogR file", default='Tumor_LogR.txt')
+parser$add_argument("--tumorbaf_file", type="character", help="Tumor BAF file", default='Tumor_BAF.txt')
+parser$add_argument("--germlinelogr_file", type="character", help="Germline LogR file", default='Germline_LogR.txt')
+parser$add_argument("--germlinebaf_file", type="character", help="Germline BAF file", default='Germline_BAF.txt')
 
 args <- parser$parse_args()
 
@@ -37,11 +30,6 @@ CNalign::get_CNalign_obj_for_snp_data(ascat_dir=args$ascat_dir,
                                       normal_sample=args$normal_name,
                                       GCcontentfile=args$gc_file, 
                                       replictimingfile=args$rt_file, 
-                                      multipcf_penalty=args$penalty, 
-                                      multipcf_refine=args$refine, 
-                                      multipcf_selectAlg=args$selectalg, 
-                                      cleanup=args$cleanup, 
-                                      seed=args$seed, 
                                       output_dir=args$output_dir, 
                                       obj_filename=args$obj_file,
                                       Tumor_LogR_filename=args$tumorlogr_file,
