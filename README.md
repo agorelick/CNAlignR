@@ -73,7 +73,8 @@ Rscript ~/repos/CNalign/scripts/merge_alleleCounter_data.R \
   --sex XX \
   --build hg19 \
   --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
-  --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt
+  --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt \
+  --obj_file C66_CNalign_obj.rds
 ```
 
 Your directory should now have a file named `<PatientID>_CNalign_data.rds`. **Consider this the "preprocessed" input data for CNalign.**
