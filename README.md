@@ -65,18 +65,20 @@ Once this has finished running, your directory should be populated with **six fi
 <PatientID>_<TumorID>_<NormalID>_Germline_BAF_rawBAF.txt
 ```
 
-With the CNalign conda environment still activated, use the provided R script to merge these sample files together to obtain 4 patient-level TSV files:
+With the CNalign conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNalign. This will likely require **at least 32GB of RAM**.
 ```
-Rscript <path to CNalign github repo>/scripts/merge_alleleCounter_data.R --ascat_dir . --normal_sample <NormalID> --patient <PatientID>
+Rscript ~/repos/CNalign/scripts/merge_alleleCounter_data.R \
+  --patient C66 \
+  --normal_sample c66N3 \
+  --sex XX \
+  --build hg19 \
+  --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
+  --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt
 ```
 
-Your directory should now have 4 new files with names in the following format. **Consider these the "preprocessed" input data for CNalign.**
-```
-<PatientID>_Tumor_LogR.txt
-<PatientID>_Tumor_BAF.txt
-<PatientID>_Germline_LogR.txt
-<PatientID>_Germline_BAF.txt
-```
+Your directory should now have a file named `<PatientID>_CNalign_data.rds`. **Consider this the "preprocessed" input data for CNalign.**
+
+
 
 ## Creating the CNalign data object
 The input data for CNalign is a .rds file (generated in R) containing a named-list of various datasets and metadata.   
