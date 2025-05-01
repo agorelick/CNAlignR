@@ -55,8 +55,31 @@ Rscript <CNalign_dir>/scripts/run_ascat_prepareHTS.R \
   --loci_prefix /n/data1/hms/genetics/naxerova/lab/alex/reference_data/ascat/G1000_lociAll_hg38/G1000_loci_GRCh38_chr
 ```
 
+Once this has finished running, your directory should be populated with **six files for each tumor sample**, with names in the format:
+```
+<PatientID>_<TumorID>_<NormalID>_Tumor_LogR.txt
+<PatientID>_<TumorID>_<NormalID>_Tumor_BAF.txt
+<PatientID>_<TumorID>_<NormalID>_Tumor_BAF_rawBAF.txt
+<PatientID>_<TumorID>_<NormalID>_Germline_LogR.txt
+<PatientID>_<TumorID>_<NormalID>_Germline_BAF.txt
+<PatientID>_<TumorID>_<NormalID>_Germline_BAF_rawBAF.txt
+```
 
+With the CNalign conda environment still activated, use the provided R script to merge these sample files together to obtain 4 patient-level TSV files:
+```
+Rscript <path to CNalign github repo>/scripts/merge_alleleCounter_data.R --ascat_dir . --normal_sample <NormalID> --patient <PatientID>
+```
 
+Your directory should now have 4 new files with names in the following format. **Consider these the "preprocessed" input data for CNalign.**
+```
+<PatientID>_Tumor_LogR.txt
+<PatientID>_Tumor_BAF.txt
+<PatientID>_Germline_LogR.txt
+<PatientID>_Germline_BAF.txt
+```
+
+## Creating the CNalign data object
+The input data for CNalign is a .rds file (generated in R) containing a named-list of various datasets and metadata.   
 
 
 
