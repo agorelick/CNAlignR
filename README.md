@@ -1,21 +1,22 @@
 # CNAlign
 use optimal segment alignment to fit purity and ploidy across multi-region bulk tumor samples
 
-# Installation
 
-## Clone the CNalign github repo and cd to it
+## 1. Installation
+
+### Clone the CNalign github repo and cd to it
 ```
 git clone https://github.com/agorelick/CNalign
 cd CNalign
 ```
 
-## Create a new Conda environment and install dependencies from Conda
+### Create a new Conda environment and install dependencies from Conda
 ```
 conda env create -n "CNalign" -f environment.yml
 conda activate CNalign
 ```
 
-## With the CNalign environment activated, open R, then install additional requirements from bioconductor
+### With the CNalign environment activated, open R, then install additional requirements from bioconductor
 ```r
 # install prerequisites from bioconductor
 install.packages("BiocManager")
@@ -31,9 +32,9 @@ install.packages('.',type='src',repos=NULL)
 ```
 
 
-# Running CNalign on Whole-Exome Sequencing (WES) data
+## 2. Running CNalign on Whole-Exome Sequencing (WES) data
 
-## Pre-processing input data
+### Pre-processing input data
 For WES input, the input data to CNalign is generated in the same way as for ASCAT: You will use the ASCAT utility prepareHTS() to run _alleleCounter_ (a software which we installed in step XX above) to obtain allele-specific read counts for common SNPs from Tumor/Normal-paired bam files. These will be used as input to CNalign in the following step.
 
 A utility R script is provided in `<CNalign_dir>/scripts/run_ascat_prepareHTS.R`. This can be run from the command line for each pair of tumor/normal bam files for a given patient. For users on HMS's O2 cluster, a template script for the slurm job scheduler is available at `<CNalign_dir>/scripts/run_ascat_prepareHTS_slurm.sh`, which can be used to run run_ascat_prepareHTS.R parallelized with each tumor/normal pair as a distinct submitted job. 
@@ -79,10 +80,6 @@ Rscript ~/repos/CNalign/scripts/merge_alleleCounter_data.R \
 
 Your directory should now have a file named `<PatientID>_CNalign_data.rds`. **Consider this the "preprocessed" input data for CNalign.**
 
-
-
-## Creating the CNalign data object
-The input data for CNalign is a .rds file (generated in R) containing a named-list of various datasets and metadata.   
 
 
 
