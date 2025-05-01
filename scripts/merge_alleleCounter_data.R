@@ -1,29 +1,52 @@
+message('Starting script to create CNalign data object.')
+
+message('Loading required packages ...')
 suppressPackageStartupMessages(library("argparse"))
 suppressPackageStartupMessages(library("data.table"))
+suppressPackageStartupMessages(library("CNalign"))
 
 # create parser object
 parser <- ArgumentParser()
 
-# input parameters
-parser$add_argument("--normal_sample", type="character", help="Normal sample name")
+# input parameters (required)
 parser$add_argument("--patient", type="character", help="Patient ID")
+parser$add_argument("--normal_sample", type="character", help="Normal sample name")
+parser$add_argument("--sex", type="character", help="Patient sex, encoded XX or XY")
+parser$add_argument("--build", type="character", help="Human reference genome version, encoded hg19 or hg38 (regardless of chr prefix in contig names)")
+parser$add_argument("--GCcontentfile", type="character", help="GCcontentfile")
+parser$add_argument("--replictimingfile", type="character", help="replictimingfile")
+
+# multipcf arguments
+parser$add_argument("--penalty", type="numeric", help="Penalty for multipcf, should be large (~300) for purity/ploidy fitting", default=300)
+parser$add_argument("--seed", type="integer", help="seed for multipcf (-1 = no seed)", default=-1)
+parser$add_argument("--selectAlg", type="character", help="selectAlg for multipcf (exact|fast)", default='exact')
+parser$add_argument("--refine", type="logical", help="should we refine segments after multipcf?", default=TRUE)
+
+# input parameters (optional)
 parser$add_argument("--ascat_dir", type="character", help="Directory with output from alleleCounter", default='.')
 parser$add_argument("--output_dir", type="character", help="output directory (where tmp files and data obj will go)", default='.')
 parser$add_argument("--tumorlogr_file", type="character", help="Tumor LogR file", default='Tumor_LogR.txt')
 parser$add_argument("--tumorbaf_file", type="character", help="Tumor BAF file", default='Tumor_BAF.txt')
 parser$add_argument("--germlinelogr_file", type="character", help="Germline LogR file", default='Germline_LogR.txt')
 parser$add_argument("--germlinebaf_file", type="character", help="Germline BAF file", default='Germline_BAF.txt')
+parser$add_argument("--obj_file", type="character", help="CNalign data object file", default='CNalign_obj.rds')
 
 # parse args
 args <- parser$parse_args()
 patient = args$patient
-ascat_dir = args$ascat_dir
 normal_sample = args$normal_sample
+sex = args$sex
+build = args$build
+GCcontentfile = args$GCcontentfile
+replictimingfile = args$replictimingfile
+ascat_dir = args$ascat_dir
 output_dir = args$output_dir
 tumorlogr_file = args$tumorlogr_file
 tumorbaf_file = args$tumorbaf_file
 germlinelogr_file = args$germlinelogr_file
 germlinebaf_file = args$germlinebaf_file
+obj_file = args$obj_file
+
 
 # dynamically get input file names
 ascat_files <- dir(ascat_dir,full.names=T)
@@ -100,5 +123,44 @@ write.table(t_LogR, file = merged_tumorlogr_file, sep = "\t", quote = FALSE, col
 write.table(n_LogR, file = merged_germlinelogr_file, sep = "\t", quote = FALSE, col.names = NA)
 write.table(t_BAF, file = merged_tumorbaf_file, sep = "\t", quote = FALSE, col.names = NA)
 write.table(n_BAF, file = merged_germlinebaf_file, sep = "\t", quote = FALSE, col.names = NA)
+
+## get snp-level data
+message('Running prep_data_for_multipcf() ...')
+obj <- prep_data_for_multipcf(Tumor_LogR_file=merged_tumorlogr_file,
+                              Tumor_BAF_file=merged_tumorbaf_file,
+                              Germline_LogR_file=merged_germlinelogr_file,
+                              Germline_BAF_file=merged_germlinebaf_file,
+                              sex=sex,
+                              build=build,
+                              GCcontentfile=GCcontentfile,
+                              replictimingfile=replictimingfile)
+
+## add a list with the parameters to the output object so that we have a record of what values were used
+main_params <- list(patient = args$patient,
+                    normal_sample = args$normal_sample,
+                    sex = args$sex,
+                    build = args$build,
+                    GCcontentfile = args$GCcontentfile,
+                    replictimingfile = args$replictimingfile,
+                    ascat_dir = args$ascat_dir,
+                    output_dir = args$output_dir,
+                    tumorlogr_file = args$tumorlogr_file,
+                    tumorbaf_file = args$tumorbaf_file,
+                    germlinelogr_file = args$germlinelogr_file,
+                    germlinebaf_file = args$germlinebaf_file,
+                    obj_file = args$obj_file)
+obj$main_params <- main_params
+
+# save object 
+output_path <- file.path(output_dir, obj_file)
+message('Saving CNalign data object to: ', output_path)
+saveRDS(obj, file=output_path)
+
+# do multipcf with large penalty (better for purity/ploidy fitting)
+myseed = ifelse(args$seed!=-1,args$seed,as.numeric(NA))
+obj2 <- run_ascat_multipcf(obj, build=args$build, penalty=args$penalty, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
+obj2$main_params <- list(build=args$build, penalty=args$penalty, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
+output2_path <- gsub('[.]rds','_mpcf.rds',output_path)
+saveRDS(obj2, file=output2_path)
 
 
