@@ -70,7 +70,7 @@ Once this has finished running, your directory should be populated with **six fi
 
 ### 2.2 Generate CNalign input data (.rds files)
 
-With the CNalign conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNalign. This will likely require **at least 32GB of RAM** and may take an **hour to complete**.
+With the CNalign conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNalign. This will likely require **at least 32GB of RAM** and may take **a few hours to complete** (depending on the number of samples).
 ```bash
 # example command to generate input data object for one patient.
 Rscript ~/repos/CNalign/scripts/merge_alleleCounter_data.R \
