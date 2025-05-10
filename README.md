@@ -5,13 +5,13 @@ use optimal segment alignment to fit purity and ploidy across multi-region bulk 
 ## 1. Installation
 
 ### Clone the CNalign github repo and cd to it
-```
+```bash
 git clone https://github.com/agorelick/CNalign
 cd CNalign
 ```
 
 ### Create a new Conda environment and install dependencies from Conda
-```
+```bash
 conda env create -n "CNalign" -f environment.yml
 conda activate CNalign
 ```
@@ -34,14 +34,16 @@ install.packages('.',type='src',repos=NULL)
 
 ## 2. Running CNalign on Whole-Exome Sequencing (WES) data
 
-### Pre-processing input data
+### 2.1 Pre-processing input data
 For WES input, the input data to CNalign is generated in the same way as for ASCAT: You will use the ASCAT utility prepareHTS() to run _alleleCounter_ (a software which we installed in step XX above) to obtain allele-specific read counts for common SNPs from Tumor/Normal-paired bam files. These will be used as input to CNalign in the following step.
 
 A utility R script is provided in `<CNalign_dir>/scripts/run_ascat_prepareHTS.R`. This can be run from the command line for each pair of tumor/normal bam files for a given patient. For users on HMS's O2 cluster, a template script for the slurm job scheduler is available at `<CNalign_dir>/scripts/run_ascat_prepareHTS_slurm.sh`, which can be used to run run_ascat_prepareHTS.R parallelized with each tumor/normal pair as a distinct submitted job. 
 
-**NB: This Rscript will generate many temporary files into the current directory**, so it's best to `cd` to the intended directory for the output files first, and then run this command as follows. In this example, the directory containing .bam files is one directory up, i.e., the bam file arguments start with ../)
+**NB: This Rscript will generate many temporary files into the current directory**, so it's best to `cd` to the intended directory for the output files first, and then run this command as follows. In this example, the directory containing .bam files is one directory up, i.e., the bam file arguments start with ../). 
 
-```
+**NB:** In the following command, encode patient sex as "XX" or "XY" (this will be used for the expected copies in chrX/chrY). Also, encode the reference genome version/build as "hg19" or "hg38", regardless of whether the .bam files have "chr"-prefixed chromosome names.
+
+```bash
 Rscript <CNalign_dir>/scripts/run_ascat_prepareHTS.R \
   --patient testpatient \
   --tumor_name Liv3 \
@@ -57,7 +59,7 @@ Rscript <CNalign_dir>/scripts/run_ascat_prepareHTS.R \
 ```
 
 Once this has finished running, your directory should be populated with **six files for each tumor sample**, with names in the format:
-```
+```bash
 <PatientID>_<TumorID>_<NormalID>_Tumor_LogR.txt
 <PatientID>_<TumorID>_<NormalID>_Tumor_BAF.txt
 <PatientID>_<TumorID>_<NormalID>_Tumor_BAF_rawBAF.txt
@@ -66,20 +68,34 @@ Once this has finished running, your directory should be populated with **six fi
 <PatientID>_<TumorID>_<NormalID>_Germline_BAF_rawBAF.txt
 ```
 
-With the CNalign conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNalign. This will likely require **at least 32GB of RAM**.
-```
+### 2.2 Generate CNalign input data (.rds files)
+
+With the CNalign conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNalign. This will likely require **at least 32GB of RAM** and may take an **hour to complete**.
+```bash
+# example command to generate input data object for one patient.
 Rscript ~/repos/CNalign/scripts/merge_alleleCounter_data.R \
-  --patient C66 \
-  --normal_sample c66N3 \
-  --sex XX \
-  --build hg19 \
+  --patient C66         # <PatientID> \
+  --normal_sample c66N3 # <NormalID>  \
+  --sex XX              # XX|XY       \
+  --build hg19          # hg19|hg38   \
   --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
   --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt \
-  --obj_file C66_CNalign_obj.rds
+  --obj_file            # <PatientID>_CNalign_obj.rds
 ```
 
-Your directory should now have a file named `<PatientID>_CNalign_data.rds`. **Consider this the "preprocessed" input data for CNalign.**
+Your directory should now have three .rds files with the (default) filenames as below. **Consider these the input data for CNalign.**
+```bash
+# CNalign input with high-penalty mpcf (multi-sample segment alignment, penalty=300).
+# This should have fewer copy number segments (ideally < 150), making it easier to fit purity/ploidy in each sample.
+<PatientID>_CNalign_obj_mpcf.rds         
 
+# CNalign input with low-penalty mpcf (penalty=25).
+# This may have hundreds of copy number segments, making it more sensitive for focal copy number changes. Use these segments for assigning copy number to specific genes/mutations, based on the purity obtained from the aforementioned high-penalty version.
+<PatientID>_CNalign_obj_mpcf_hisens.rds
+
+# same as the above outputs but without running MPCF. This is mainly for QC/recovery in case MPCF fails due to excessive time/memory usage. 
+<PatientID>_CNalign_obj.rds              
+```
 
 
 
