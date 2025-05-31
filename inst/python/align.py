@@ -13,9 +13,9 @@ import time
 import numpy as np
 
 ## dat should be a data.frame object from R with columns: "sample", "segment", "logR", "BAF", "GC", "mb"
-def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=50.0, 
+def do_CNalign(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=50.0, 
                 delta_tcn_to_int=0.2, delta_tcn_to_avg=0.1, delta_tcnavg_to_int=0.05, delta_mcn_to_int=0.2, delta_mcn_to_avg=0.1, delta_mcnavg_to_int=0.05, mcn_weight=0.5,
-                rho=1.0, gurobi_license='', epsilon=0, normal_baseline=2, aligned_includes_wt=0, timeout=10*60, min_cna_segments_per_sample=3):
+                rho=1.0, gurobi_license='', normal_baseline=2, aligned_includes_wt=0, timeout=10*60, min_cna_segments_per_sample=3, obj2_clonalonly=0):
 
     # Create an environment with your WLS license
     with open(gurobi_license) as file:
@@ -112,7 +112,6 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
     tcn_gain = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='tcn_gain')
     tcn_loss = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='tcn_loss')
     tcn_cna = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='tcn_cna')
-    #tcn_int_err_term = model.addVars(Samples, Segments, vtype=GRB.CONTINUOUS, name="tcn_int_err_term")
     tcn_error_clonal = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='tcn_error_clonal')
 
 
@@ -132,7 +131,6 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
     mcn_gain = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='mcn_gain')
     mcn_loss = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='mcn_loss')
     mcn_cna = model.addVars(Samples, Segments, vtype=GRB.BINARY, name='mcn_cna')
-    #mcn_int_err_term = model.addVars(Samples, Segments, vtype=GRB.CONTINUOUS, name="mcn_int_err_term")
     mcn_error_clonal = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='mcn_error_clonal')
     
     
@@ -199,7 +197,7 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
             # =============================================================================
             
             # is TCN close to its nearest integer
-            model.addConstr(tcn_int[t,s] <= tcn[t,s] + 0.5 - epsilon) 
+            model.addConstr(tcn_int[t,s] <= tcn[t,s] + 0.5) 
             model.addConstr(tcn_int[t,s] >= tcn[t,s] - 0.5) 
             model.addConstr(tcn_int_err[t,s] >= tcn_int[t,s] - tcn[t,s])
             model.addConstr(tcn_int_err[t,s] >= -tcn_int[t,s] + tcn[t,s])
@@ -215,7 +213,7 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
             model.addGenConstrIndicator(tcn_close_to_avg[t,s], 1, tcn_spread[t,s], GRB.LESS_EQUAL, delta_tcn_to_avg)
             
             # is TCNavg close to its nearest integer
-            model.addConstr(tcn_avg_int[t,s] <= tcn_avg[t,s] + 0.5 - epsilon) 
+            model.addConstr(tcn_avg_int[t,s] <= tcn_avg[t,s] + 0.5) 
             model.addConstr(tcn_avg_int[t,s] >= tcn_avg[t,s] - 0.5) 
             model.addConstr(tcn_avg_int_err[t,s] >= tcn_avg[t,s] - tcn_avg_int[t,s])
             model.addConstr(tcn_avg_int_err[t,s] >= -tcn_avg[t,s] + tcn_avg_int[t,s])                
@@ -237,7 +235,7 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
             # =============================================================================
 
             # is MCN close to its nearest integer
-            model.addConstr(mcn_int[t,s] <= mcn[t,s] + 0.5 - epsilon) 
+            model.addConstr(mcn_int[t,s] <= mcn[t,s] + 0.5) 
             model.addConstr(mcn_int[t,s] >= mcn[t,s] - 0.5) 
             model.addConstr(mcn_int_err[t,s] >= mcn_int[t,s] - mcn[t,s])
             model.addConstr(mcn_int_err[t,s] >= -mcn_int[t,s] + mcn[t,s])
@@ -253,7 +251,7 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
             model.addGenConstrIndicator(mcn_close_to_avg[t,s], 1, mcn_spread[t,s], GRB.LESS_EQUAL, delta_mcn_to_avg)
             
             # is MCNavg close to its nearest integer
-            model.addConstr(mcn_avg_int[t,s] <= mcn_avg[t,s] + 0.5 - epsilon) 
+            model.addConstr(mcn_avg_int[t,s] <= mcn_avg[t,s] + 0.5) 
             model.addConstr(mcn_avg_int[t,s] >= mcn_avg[t,s] - 0.5) 
             model.addConstr(mcn_avg_int_err[t,s] >= mcn_avg[t,s] - mcn_avg_int[t,s])
             model.addConstr(mcn_avg_int_err[t,s] >= -mcn_avg[t,s] + mcn_avg_int[t,s])                
@@ -282,7 +280,7 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
             model.addGenConstrOr(is_cna[t,s], [tcn_cna[t,s], mcn_cna[t,s]]) 
                 
             ## check if it has homdel
-            model.addGenConstrIndicator(is_homdel[t,s], 1, tcn[t,s], GRB.LESS_EQUAL, 0.5-epsilon)
+            model.addGenConstrIndicator(is_homdel[t,s], 1, tcn[t,s], GRB.LESS_EQUAL, 0.5)
             
             ## check if segment matches and is large and has a CNA 
             model.addGenConstrAnd(match_both_and_large_enough[t,s], [match_both[t,s], large_enough[t,s]])
@@ -306,23 +304,27 @@ def do_CNalign4(dat, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity
     # objective 1: number of segments with clonal SCNAs (the same CNA in 1+ allele, present in rho+ % of samples)
     model.addConstr(n_clonal == gb.quicksum(allmatch[s] for s in Segments))
     
-    # objective 2a, 2b: minimize the combined error among all segments
-    model.addConstr(tcn_error_clonal == gb.quicksum(tcn_int_err[t, s] for t in Samples for s in Segments))
-    model.addConstr(mcn_error_clonal == gb.quicksum(mcn_int_err[t, s] for t in Samples for s in Segments))    
+    if(obj2_clonalonly==0):
+        # objective 2a, 2b: minimize the combined error among all segments
+        model.addConstr(tcn_error_clonal == gb.quicksum(tcn_int_err[t, s] for t in Samples for s in Segments))
+        model.addConstr(mcn_error_clonal == gb.quicksum(mcn_int_err[t, s] for t in Samples for s in Segments))    
     
-    # objective 2a, 2b: minimize the combined error among CLONAL segments (don't use this)
-    # for t in Samples:
-    #     for s in Segments:
-    #         model.addConstr(tcn_int_err_term[t, s] <= tcn_int_err[t, s])
-    #         model.addConstr(tcn_int_err_term[t, s] <= allmatch[s])
-    #         model.addConstr(tcn_int_err_term[t, s] >= tcn_int_err[t, s] - (1 - allmatch[s]))
-    #         model.addConstr(tcn_int_err_term[t, s] >= 0)    
-    #         model.addConstr(mcn_int_err_term[t, s] <= mcn_int_err[t, s])
-    #         model.addConstr(mcn_int_err_term[t, s] <= allmatch[s])
-    #         model.addConstr(mcn_int_err_term[t, s] >= mcn_int_err[t, s] - (1 - allmatch[s]))
-    #         model.addConstr(mcn_int_err_term[t, s] >= 0)              
-    #model.addConstr(tcn_error_clonal == gb.quicksum(tcn_int_err_term[t, s] for t in Samples for s in Segments))
-    #model.addConstr(mcn_error_clonal == gb.quicksum(mcn_int_err_term[t, s] for t in Samples for s in Segments))
+    else:
+        # objective 2a, 2b: minimize the combined error among CLONAL segments 
+        tcn_int_err_term = model.addVars(Samples, Segments, vtype=GRB.CONTINUOUS, name="tcn_int_err_term")
+        mcn_int_err_term = model.addVars(Samples, Segments, vtype=GRB.CONTINUOUS, name="mcn_int_err_term")
+        for t in Samples:
+            for s in Segments:
+                model.addConstr(tcn_int_err_term[t, s] <= tcn_int_err[t, s])
+                model.addConstr(tcn_int_err_term[t, s] <= allmatch[s])
+                model.addConstr(tcn_int_err_term[t, s] >= tcn_int_err[t, s] - (1 - allmatch[s]))
+                model.addConstr(tcn_int_err_term[t, s] >= 0)    
+                model.addConstr(mcn_int_err_term[t, s] <= mcn_int_err[t, s])
+                model.addConstr(mcn_int_err_term[t, s] <= allmatch[s])
+                model.addConstr(mcn_int_err_term[t, s] >= mcn_int_err[t, s] - (1 - allmatch[s]))
+                model.addConstr(mcn_int_err_term[t, s] >= 0)              
+        model.addConstr(tcn_error_clonal == gb.quicksum(tcn_int_err_term[t, s] for t in Samples for s in Segments))
+        model.addConstr(mcn_error_clonal == gb.quicksum(mcn_int_err_term[t, s] for t in Samples for s in Segments))
 
     # Optimize with stagnation callback  
     model.setObjectiveN(n_clonal, index=0, priority=2, weight=1, name='N clonal segs')
