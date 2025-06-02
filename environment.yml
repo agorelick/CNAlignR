@@ -1,20 +1,29 @@
 name: CNAlignR
 channels:
-  - defaults
+  - gurobi
+  - conda-forge
+  - bioconda
+  - r
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
 dependencies:
-  - conda-forge::python
+  - bioconda::bioconductor-biobase
+  - bioconda::bioconductor-ggtree
+  - bioconda::bioconductor-rsamtools
+  - bioconda::samtools
   - conda-forge::numpy
   - conda-forge::pandas
-  - gurobi::gurobi=12.0.2
-  - bioconda::samtools
-  - conda-forge::r-base=4.4.1
+  - conda-forge::python
   - conda-forge::r-ape
+  - conda-forge::r-base=4.4.1
+  - conda-forge::r-biocmanager
   - conda-forge::r-caper
   - conda-forge::r-cowplot
   - conda-forge::r-data.table
   - conda-forge::r-desctools
   - conda-forge::r-devtools
   - conda-forge::r-ggplot2
+  - conda-forge::r-ggrepel
   - conda-forge::r-lubridate
   - conda-forge::r-phangorn
   - conda-forge::r-pheatmap
@@ -25,5 +34,5 @@ dependencies:
   - conda-forge::r-reticulate
   - conda-forge::r-rjson
   - conda-forge::r-vegan
-  - conda-forge::r-ggrepel
-
+  - gurobi::gurobi=12.0.2
+prefix: /Users/alexgorelick/miniconda3/envs/CNAlignR
