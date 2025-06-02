@@ -1,8 +1,8 @@
-# CNAlign
+# CNAlignR
 use optimal segment alignment to fit purity and ploidy across multi-region bulk tumor samples
 
 
-## 1. Installation
+## 1. Installation (Mac)
 
 ### Clone the CNAlignR github repo and cd to it
 ```bash
@@ -14,22 +14,19 @@ cd CNAlignR
 ```bash
 conda env create -n "CNAlignR" -f environment.yml
 conda activate CNAlignR
+
+R CMD INSTALL inst/ascat-3.1.3.tar.gz # install ASCAT from source
+R CMD INSTALL . # install CNAlignR R package
 ```
 
-### With the CNAlignR environment activated, open R, then install additional requirements from bioconductor
-```r
-# install prerequisites from bioconductor
-install.packages("BiocManager")
-BiocManager::install("Rsamtools")
-BiocManager::install("ggtree")
-BiocManager::install("Biobase")
+### Install the CNAlign python module
+The main CNAlign algorithm is implenented as a standalone python library. Follow the instructions on the associated github page to install CNAlign (https://github.com/agorelick/CNAlign)
 
-# install ASCAT v3.1.3 from source
-install.packages('inst/ascat-3.1.3.tar.gz',type='src',repos=NULL)
 
-# install CNAlignR R package
-install.packages('.',type='src',repos=NULL)
-```
+
+
+
+
 
 
 ## 2. Running CNAlignR on Whole-Exome Sequencing (WES) data
