@@ -238,13 +238,13 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA, 
 
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # generate data formatted for CNalign
+    # generate data formatted for CNAlignR
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    ## long table of sample,segment-level BAF, LogR, GC for CNalign input
-    CNalign_dat <- as.data.frame(segment_level[,c('sample','segment','LogR_segmented','BAF_segmented','germline_copies'),with=F])
-    names(CNalign_dat) <- c('sample','segment','LogR','BAF','GC')
-    obj$CNalign_dat <- CNalign_dat
+    ## long table of sample,segment-level BAF, LogR, GC for CNAlignR input
+    CNAlignR_dat <- as.data.frame(segment_level[,c('sample','segment','LogR_segmented','BAF_segmented','germline_copies'),with=F])
+    names(CNAlignR_dat) <- c('sample','segment','LogR','BAF','GC')
+    obj$CNAlignR_dat <- CNAlignR_dat
 
  
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

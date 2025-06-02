@@ -292,7 +292,7 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
 
 ##' get_fit_and_plot
 ##'
-##' Plot segments for a given sample after CNalign
+##' Plot segments for a given sample after CNAlign
 ##'
 ##' @export
 get_fit_and_plot <- function(s, highlight, fits, obj, params, plot_dir) { 

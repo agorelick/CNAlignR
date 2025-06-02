@@ -1,15 +1,15 @@
-##' CNalign
+##' CNAlign
 ##'
 ##' Determine purity and ploidy values for multiple tumor samples with shared ancestry. This function uses the GuRoBi solver to determine purity/ploidy values for each sample that will *maximize* the number of segments with the same (allele-specific) integer copy numbers in at least rho% of samples. 
 ##'
 ##' @export
-CNalign <- function(dat, gurobi_license, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=100.0, 
+CNAlign <- function(dat, gurobi_license, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=100.0, 
                     delta_tcn_to_int=0.2, delta_tcn_to_avg=0.1, delta_tcnavg_to_int=0.1, delta_mcn_to_int=0.2, delta_mcn_to_avg=0.1, delta_mcnavg_to_int=0.1, 
                     rho=1.0, normal_baseline=2, timeout=120, min_cna_segments_per_sample=1, mcn_weight=0.5, obj2_clonalonly=0) {
                 
     require(reticulate)
     require(lubridate)
-    if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNalign")
+    #if(is.na(py_script)) py_script <- system.file("python", "align.py", package = "CNAlignR")
 
     ## given input matrices of aligned sample/segment:
     ## 1. logR (required, no NAs)
@@ -21,13 +21,13 @@ CNalign <- function(dat, gurobi_license, min_ploidy=1.7, max_ploidy=6.0, min_pur
 	
 	source_python(py_script)
 	start_time <- now()
-	message('Started CNalign at ',as.character(start_time))
+	message('Started CNAlign at ',as.character(start_time))
 
-    m <- do_CNalign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, normal_baseline=normal_baseline, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight, obj2_clonalonly=obj2_clonalonly)
+    m <- do_CNAlign(dat, min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, normal_baseline=normal_baseline, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight, obj2_clonalonly=obj2_clonalonly)
 
 	end_time <- now()
 	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
-    message('Ended CNalign at ',as.character(end_time))
+    message('Ended CNAlign at ',as.character(end_time))
     sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
     message('Time elapsed: ',sec_elapsed,'s')
 

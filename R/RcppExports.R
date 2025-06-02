@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 phaseblock <- function(pos, bin, max_phaseable_distance) {
-    .Call(`_CNalign_phaseblock`, pos, bin, max_phaseable_distance)
+    .Call(`_CNAlignR_phaseblock`, pos, bin, max_phaseable_distance)
 }
 
