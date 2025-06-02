@@ -36,7 +36,7 @@ CNAlign -h
 `cd` back to the top of the CNAlignR github repo directory and install CNAlignR from source:
 
 ```bash
-cd ..
+cd ../..
 R CMD INSTALL . # install CNAlignR R package
 ```
 
