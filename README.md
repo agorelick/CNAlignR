@@ -16,7 +16,6 @@ conda env create -n "CNAlignR" -f environment.yml
 conda activate CNAlignR
 
 R CMD INSTALL inst/ascat-3.1.3.tar.gz # install ASCAT from source
-R CMD INSTALL . # install CNAlignR R package
 ```
 
 ### Install the CNAlign python module into CNAlignR/inst
@@ -32,6 +31,15 @@ Test that the CNAlign python module is installed:
 # from the directory inst/CNAlign:
 CNAlign -h
 ```
+
+### Install the CNAlignR R library\
+`cd` back to the top of the CNAlignR github repo directory and install CNAlignR from source:
+
+```bash
+cd ..
+R CMD INSTALL . # install CNAlignR R package
+```
+
 
 
 
