@@ -27,8 +27,11 @@ cd inst
 git clone https://github.com/agorelick/CNAlign; cd CNAlign; pip install . --use-pep517
 ```
 
-
-
+Test that the CNAlign python module is installed:
+```
+# from the directory inst/CNAlign:
+CNAlign -h
+```
 
 
 
