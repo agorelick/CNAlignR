@@ -19,9 +19,13 @@ R CMD INSTALL inst/ascat-3.1.3.tar.gz # install ASCAT from source
 R CMD INSTALL . # install CNAlignR R package
 ```
 
-### Install the CNAlign python module
-The main CNAlign algorithm is implenented as a standalone python library. Follow the instructions on the associated github page to install CNAlign (https://github.com/agorelick/CNAlign)
+### Install the CNAlign python module into CNAlignR/inst
+The main CNAlign algorithm is implenented as a standalone python library. With the CNAlignR conda environment still attached, clone the associated github repo into inst/; then install it into that directory:
 
+```bash
+cd inst
+git clone https://github.com/agorelick/CNAlign; cd CNAlign; pip install . --use-pep517
+```
 
 
 
