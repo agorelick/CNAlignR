@@ -1,9 +1,9 @@
-message('Starting script to create CNalign data object.')
+message('Starting script to create CNAlignR data object.')
 
 message('Loading required packages ...')
 suppressPackageStartupMessages(library("argparse"))
 suppressPackageStartupMessages(library("data.table"))
-suppressPackageStartupMessages(library("CNalign"))
+suppressPackageStartupMessages(library("CNAlignR"))
 
 # create parser object
 parser <- ArgumentParser()
