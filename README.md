@@ -2,7 +2,7 @@
 use optimal segment alignment to fit purity and ploidy across multi-region bulk tumor samples
 
 
-## 1. Installation (Mac)
+## 1. Installation (Mac/Linux)
 
 ### Clone the CNAlignR github repo and cd to it
 ```bash
@@ -44,10 +44,10 @@ R CMD INSTALL . # install CNAlignR R package
 
 
 
-## 2. Running CNAlignR on Whole-Exome Sequencing (WES) data
+## 2a. Running CNAlignR on Whole-Exome Sequencing (WES) data
 
-### 2.1 Pre-processing input data
-For WES input, the input data to CNAlignR is generated in the same way as for ASCAT: You will use the ASCAT utility prepareHTS() to run _alleleCounter_ (a software which we installed in step XX above) to obtain allele-specific read counts for common SNPs from Tumor/Normal-paired bam files. These will be used as input to CNAlignR in the following step.
+### 2a.1 Pre-processing input data
+For WES data, the input data to CNAlignR is generated in the same way as for ASCAT: You will use the ASCAT utility prepareHTS() to run _alleleCounter_ (a software which we installed in step XX above) to obtain allele-specific read counts for common SNPs from Tumor/Normal-paired bam files. These will be used as input to CNAlignR in the following step.
 
 A utility R script is provided in `<CNAlignR_dir>/scripts/run_ascat_prepareHTS.R`. This can be run from the command line for each pair of tumor/normal bam files for a given patient. For users on HMS's O2 cluster, a template script for the slurm job scheduler is available at `<CNAlignR_dir>/scripts/run_ascat_prepareHTS_slurm.sh`, which can be used to run run_ascat_prepareHTS.R parallelized with each tumor/normal pair as a distinct submitted job. 
 
@@ -80,7 +80,7 @@ Once this has finished running, your directory should be populated with **six fi
 <PatientID>_<TumorID>_<NormalID>_Germline_BAF_rawBAF.txt
 ```
 
-### 2.2 Generate CNAlignR input data (.rds files)
+### 2a.2 Generate CNAlignR input data (.rds files)
 
 With the CNAlignR conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNAlignR. This will likely require **at least 32GB of RAM** and may take **a few hours to complete** (depending on the number of samples).
 ```bash
@@ -109,5 +109,25 @@ Your directory should now have three .rds files with the (default) filenames as 
 <PatientID>_CNAlignR_obj.rds              
 ```
 
+## 2b. Running CNAlignR on low-pass whole-genome sequencing (lpWGS) data
+
+### 2b.1 Pre-processing input data
+For lpWGS data, the input data to CNAlignR is generated with a custom workflow (**instructions pending**). The output of this process for each patient should be the following 3 data files:
+- A .bcf file with the positions of high-confidence phased heterozygous common SNPs from the patient's normal sample (via GLIMPSE2)
+- A pileup.gz file containing read counts supporting the REF and ALT alleles for all tumor+normal samples at the phased heterozygous SNPs (via snp-pileup)
+- A .rds file of GC-corrected binned read counts for all tumor+normal samples (via QDNAseq)
+
+With the CNAlignR conda environment still activated, use the provided R script to merge these three files together and create the input data R object for CNAlignR. This will likely require **at least 32GB of RAM** and may take **a few hours to complete** (depending on the number of samples).
+
+```bash
+# example command to generate input data object for one patient.
+Rscript ~/repos/CNAlignR/scripts/merge_alleleCounter_data.R \
+  --patient C66         # <PatientID> \
+  --normal_sample c66N3 # <NormalID>  \
+  --sex XX              # XX|XY       \
+  --build hg19          # hg19|hg38   \
+  --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
+  --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt \
+  --obj_file            # <PatientID>_CNAlignR_obj.rds
 
 
