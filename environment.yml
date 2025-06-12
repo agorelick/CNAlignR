@@ -15,6 +15,7 @@ dependencies:
   - conda-forge::pandas
   - conda-forge::python
   - conda-forge::r-ape
+  - conda-forge::r-argparse
   - conda-forge::r-base=4.4.1
   - conda-forge::r-biocmanager
   - conda-forge::r-caper
