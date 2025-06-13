@@ -24,13 +24,13 @@ parser$add_argument("--selectAlg", type="character", help="selectAlg for multipc
 parser$add_argument("--refine", type="logical", help="should we refine segments after multipcf?", default=TRUE)
 
 # input parameters (optional)
-parser$add_argument("--ascat_dir", type="character", help="Directory with output from alleleCounter", default='.')
-parser$add_argument("--output_dir", type="character", help="output directory (where tmp files and data obj will go)", default='.')
+parser$add_argument("--input_dir", type="character", help="Directory with output from wes_preprocess_data.R (alleleCounter data)", default='.')
+parser$add_argument("--output_dir", type="character", help="output directory (where tmp files and CNAlignR data object will go)", default='.')
 parser$add_argument("--tumorlogr_file", type="character", help="Tumor LogR file", default='Tumor_LogR.txt')
 parser$add_argument("--tumorbaf_file", type="character", help="Tumor BAF file", default='Tumor_BAF.txt')
 parser$add_argument("--germlinelogr_file", type="character", help="Germline LogR file", default='Germline_LogR.txt')
 parser$add_argument("--germlinebaf_file", type="character", help="Germline BAF file", default='Germline_BAF.txt')
-parser$add_argument("--obj_file", type="character", help="CNalign data object file", default='CNalign_obj.rds')
+parser$add_argument("--obj_file", type="character", help="CNAlignR data object file", default='CNAlignR_obj.rds')
 parser$add_argument("--overwrite", type="logical", help="Overwrite existing data? (TRUE|FALSE)", default=FALSE)
 
 
@@ -42,7 +42,7 @@ sex = args$sex
 build = args$build
 GCcontentfile = args$GCcontentfile
 replictimingfile = args$replictimingfile
-ascat_dir = args$ascat_dir
+input_dir = args$input_dir
 output_dir = args$output_dir
 tumorlogr_file = args$tumorlogr_file
 tumorbaf_file = args$tumorbaf_file
@@ -53,7 +53,7 @@ overwrite = args$overwrite
 
 
 # dynamically get input file names
-ascat_files <- dir(ascat_dir,full.names=T)
+ascat_files <- dir(input_dir,full.names=T)
 Tumor_LogR_files <- grep(paste0(normal_sample,'_Tumor_LogR.txt'), ascat_files, value=T)
 Tumor_BAF_files <- grep(paste0(normal_sample,'_Tumor_BAF.txt'), ascat_files, value=T)
 Germline_LogR_files <- grep(paste0(normal_sample,'_Germline_LogR.txt'), ascat_files, value=T)
@@ -153,7 +153,7 @@ if(!file.exists(output_path) | overwrite==T) {
                         build = args$build,
                         GCcontentfile = args$GCcontentfile,
                         replictimingfile = args$replictimingfile,
-                        ascat_dir = args$ascat_dir,
+                        input_dir = args$input_dir,
                         output_dir = args$output_dir,
                         tumorlogr_file = args$tumorlogr_file,
                         tumorbaf_file = args$tumorbaf_file,
@@ -163,7 +163,7 @@ if(!file.exists(output_path) | overwrite==T) {
     obj$main_params <- main_params
 
     # save object 
-    message('Saving CNalign data object to: ', output_path)
+    message('Saving CNAlignR data object to: ', output_path)
     saveRDS(obj, file=output_path)
 } else {
     message(output_path,' already exists. Not overwriting it.')

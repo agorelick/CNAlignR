@@ -27,7 +27,7 @@ tumor_bam=${bam_dir}"/${tumor_sample}_recal.bam"
 normal_bam=${bam_dir}"/${normal_sample}_recal.bam"
 
 # run ASCAT/alleleCounter to get input data for CNalign
-Rscript <CNalign_dir>/scripts/run_ascat_prepareHTS.R \
+Rscript <CNalign_dir>/scripts/wes_preprocess.R \
     --patient $patient \
     --tumor_name $tumor_sample \
     --tumor_bam $tumor_bam \
