@@ -4,6 +4,8 @@ use optimal segment alignment to fit purity and ploidy across multi-region bulk 
 
 ## 1. Installation (Mac/Linux)
 
+The CNAlignR R package and conda environment need to be installed twice, once on a remove linux server with access to .bam files. It should then also be installed on a local workstation like a Mac laptop, where you can use the same R package to inspect copy number profiles for each sample and fit their purity/ploidy values. The installation steps are the same for both the server and local installation until the last step which is indicated below.
+
 ### Clone the CNAlignR github repo and cd to it
 ```bash
 git clone https://github.com/agorelick/CNAlignR
@@ -16,6 +18,7 @@ conda env create -n "CNAlignR" -f environment.yml
 conda activate CNAlignR
 
 R CMD INSTALL inst/ascat-3.1.3.tar.gz # install ASCAT from source
+R CMD INSTALL inst/QDNAseq.hg38.tar.gz
 ```
 
 ### Install the CNAlign python module into CNAlignR/inst
@@ -32,7 +35,7 @@ Test that the CNAlign python module is installed:
 CNAlign -h
 ```
 
-### Install the CNAlignR R library\
+### Install the CNAlignR R library
 `cd` back to the top of the CNAlignR github repo directory and install CNAlignR from source:
 
 ```bash
@@ -40,8 +43,15 @@ cd ../..
 R CMD INSTALL . # install CNAlignR R package
 ```
 
+### *Special instructions* for installation on remote Linux servers (to extract data from .bam files)
 
+The CNAlignR R package and conda environment need to be installed on a linux server with access to .bam files. The output from this process can then be downloaded to your local computer to do copy number profile fitting. On the Linux server, you need to download these extra conda packages:
+```bash
+conda activate CNAlignR
+conda install bioconda::cancerit-allelecount bioconda::snp-pileup
+```
 
+---------
 
 
 ## 2a. Running CNAlignR on Whole-Exome Sequencing (WES) data
