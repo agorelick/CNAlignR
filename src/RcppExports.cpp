@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // phaseblock
 NumericVector phaseblock(NumericVector pos, NumericVector bin, double max_phaseable_distance);
-RcppExport SEXP _CNalign_phaseblock(SEXP posSEXP, SEXP binSEXP, SEXP max_phaseable_distanceSEXP) {
+RcppExport SEXP _CNAlignR_phaseblock(SEXP posSEXP, SEXP binSEXP, SEXP max_phaseable_distanceSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,11 +25,11 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_CNalign_phaseblock", (DL_FUNC) &_CNalign_phaseblock, 3},
+    {"_CNAlignR_phaseblock", (DL_FUNC) &_CNAlignR_phaseblock, 3},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_CNalign(DllInfo *dll) {
+RcppExport void R_init_CNAlignR(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
