@@ -9,6 +9,7 @@ channels:
 dependencies:
   - bioconda::bioconductor-biobase
   - bioconda::bioconductor-ggtree
+  - bioconda::bioconductor-qdnaseq
   - bioconda::bioconductor-rsamtools
   - bioconda::samtools
   - conda-forge::numpy
