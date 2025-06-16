@@ -152,12 +152,92 @@ write_refphase_segs <- function (segs, cn_events = NULL, file, output_format = "
 }
 
 
-##' plot_copynumber_angular_distance
+##' get_fits_for_solution
+##' @export
+get_fits_for_solution <- function(model, sol_number) {
+    sol <- paste0('Solution_',sol_number)
+    df <- model$df[,c('Variable',sol)]
+    df$info <- sub(".*\\[(.*?)\\].*", "\\1", as.character(df$Variable)) 
+    pu <- df[grepl('pu\\[',df$Variable),]
+    pu$Variable <- NULL
+    setnames(pu,sol,'pu')
+    pl <- df[grepl('pl\\[',df$Variable),]
+    pl$Variable <- NULL
+    setnames(pl,sol,'pl')
+    fits <- merge(pu, pl, by='info')
+    setnames(fits,'info','sample')
+    fits
+}
+
+
+##' get_highlighted_segments_for_solution
+##' @export
+get_highlighted_segments_for_solution <- function(model, sol_number) {
+    sol <- paste0('Solution_',sol_number)
+    df <- model$df[,c('Variable',sol)]
+    df$info <- sub(".*\\[(.*?)\\].*", "\\1", as.character(df$Variable)) 
+    allmatch <- df[grepl('allmatch\\[',df$Variable),]
+    allmatch$Variable <- NULL
+    setnames(allmatch,sol,'highlight')
+    highlighted <- allmatch$info[allmatch$highlight==1]
+    highlighted <- as.integer(gsub('seg','',highlighted))
+    highlighted
+}
+
+
+##' get_fit_and_plot
+##'
+##' Plot segments for a given sample after CNAlign
+##'
+##' @export
+get_fit_and_plot <- function(s, highlight, fits, obj, params, plot_dir) { 
+    # create a directory for the parameters
+    params <- params[!names(params) %in% c('gurobi_license','normal_baseline')]
+    params$rho <- round(params$rho, 3)
+    #browser()
+
+    names(params)[names(params)=='rho'] = 'r'
+    names(params)[names(params)=='delta_mcn_to_avg'] = 'dm2ma'
+    names(params)[names(params)=='delta_mcn_to_int'] = 'dm2i'
+    names(params)[names(params)=='delta_mcnavg_to_int'] = 'dma2i'
+    names(params)[names(params)=='delta_tcn_to_avg'] = 'dt2ta'
+    names(params)[names(params)=='delta_tcn_to_int'] = 'dt2i'
+    names(params)[names(params)=='delta_tcnavg_to_int'] = 'dta2i'
+    names(params)[names(params)=='max_homdel_mb'] = 'homdel'
+    names(params)[names(params)=='min_ploidy'] = 'pl1'
+    names(params)[names(params)=='max_ploidy'] = 'pl2'
+    names(params)[names(params)=='min_purity'] = 'pu1'
+    names(params)[names(params)=='max_purity'] = 'pu2'
+    names(params)[names(params)=='mcn_weight'] = 'mw'
+    names(params)[names(params)=='min_aligned_seg_mb'] = 'minlen'
+    names(params)[names(params)=='min_cna_segments_per_sample'] = 'mincna'
+    names(params)[names(params)=='timeout'] = 'sec'
+    names(params)[names(params)=='obj2_clonalonlyonly'] = 'clonal'
+
+    outdir <- file.path(plot_dir,paste(paste0(names(params),'=',params), collapse='_'))
+    if(!dir.exists(outdir)) dir.create(outdir)
+
+    # figure suffix has purity/ploidy
+    fits <- as.data.table(fits)
+    pu <- round(fits[sample==s,(pu)], 3)
+    pl <- round(fits[sample==s,(pl)], 3)
+    suffix <- paste0('pu=',pu,'_pl=',pl,'.png')
+
+    message(s,': pu=',pu,', pl=',pl)
+    fit <- get_fit(s, obj, purity=pu, ploidy=pl)
+    p <- plot_fit(s, fit, obj, highlight_seg=highlight, LogR_point_size=0.25, BAF_point_size=0.25)
+
+    ggsave(plot=p, file.path(outdir,paste(s,suffix,sep='_')),width=8,height=8)
+    fit
+}
+
+
+##' plot_tcn_angular_distance_heatmap
 ##'
 ##' Plot a preliminary copy number heatmap based on angular distances from total copy number
 ##'
 ##' @export
-plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, groups=NULL, group_colors=NULL, normal_name, patient='') {
+plot_tcn_angular_distance_heatmap <- function(obj=NULL, segs=NULL, build=NULL, groups=NULL, group_colors=NULL, normal_sample, patient='') {
 
     if(!is.null(obj)) {
         segs <- rbindlist(obj$segment_level, fill=T)
@@ -200,7 +280,7 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     for(i in 1:(ncol(LogR_mat)+1)) theta_LogR[i,i] <- 0
     tree_LogR <- nj(theta_LogR)
     tree_LogR <- phytools::reroot(tree_LogR, which(tree_LogR$tip.label=='diploid'))
-    tree_LogR$tip.label[tree_LogR$tip.label=='diploid'] <- normal_name
+    tree_LogR$tip.label[tree_LogR$tip.label=='diploid'] <- normal_sample
 
     setnames(segs,c('Chromosome'),c('chr'))
     segs$sample <- as.character(segs$sample)
@@ -244,7 +324,7 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     ## add values for the diploid normal
     toadd <- segs[!duplicated(segment),]
     toadd[,value:=0]
-    toadd[,sample:=normal_name]
+    toadd[,sample:=normal_sample]
     segs <- rbind(segs, toadd)
 
     p1 <- ggtree(tree_LogR, linewidth=0.5)
@@ -260,7 +340,7 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
         message('Adding sample type groups')
         p1 <- p1 %<+% groups[,c('lesion_id','group'),with=F]
         p1 <- p1 + geom_tiplab(aes(color=group))
-        p1 <- p1 + scale_color_manual(values=group_cols,name='Organ category')
+        p1 <- p1 + scale_color_manual(values=group_colors,name='Organ category')
     } else {
         p1 <- p1 + geom_tiplab()
     }
@@ -299,58 +379,13 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
 }
 
 
-##' get_fit_and_plot
-##'
-##' Plot segments for a given sample after CNAlign
-##'
-##' @export
-get_fit_and_plot <- function(s, highlight, fits, obj, params, plot_dir) { 
-    # create a directory for the parameters
-    params <- params[!names(params) %in% c('gurobi_license','normal_baseline')]
-    params$rho <- round(params$rho, 3)
-
-    names(params)[names(params)=='rho'] = 'r'
-    names(params)[names(params)=='delta_mcn_to_avg'] = 'dm2ma'
-    names(params)[names(params)=='delta_mcn_to_int'] = 'dm2i'
-    names(params)[names(params)=='delta_mcnavg_to_int'] = 'dma2i'
-    names(params)[names(params)=='delta_tcn_to_avg'] = 'dt2ta'
-    names(params)[names(params)=='delta_tcn_to_int'] = 'dt2i'
-    names(params)[names(params)=='delta_tcnavg_to_int'] = 'dta2i'
-    names(params)[names(params)=='max_homdel_mb'] = 'homdel'
-    names(params)[names(params)=='min_ploidy'] = 'pl1'
-    names(params)[names(params)=='max_ploidy'] = 'pl2'
-    names(params)[names(params)=='min_purity'] = 'pu1'
-    names(params)[names(params)=='max_purity'] = 'pu2'
-    names(params)[names(params)=='mcn_weight'] = 'mw'
-    names(params)[names(params)=='min_aligned_seg_mb'] = 'minlen'
-    names(params)[names(params)=='min_cna_segments_per_sample'] = 'mincna'
-    names(params)[names(params)=='timeout'] = 'sec'
-    names(params)[names(params)=='obj2_clonalonlyonly'] = 'clonal'
-
-    outdir <- file.path(plot_dir,paste(paste0(names(params),'=',params), collapse='_'))
-    if(!dir.exists(outdir)) dir.create(outdir)
-
-    # figure suffix has purity/ploidy
-    pu <- round(fits[sample==s,(pu)], 3)
-    pl <- round(fits[sample==s,(pl)], 3)
-    suffix <- paste0('pu=',pu,'_pl=',pl,'.png')
-
-    message(s,': pu=',pu,', pl=',pl)
-    fit <- get_fit(s, obj, purity=pu, ploidy=pl)
-    p <- plot_fit(s, fit, obj, highlight_seg=highlight, LogR_point_size=0.25, BAF_point_size=0.25)
-
-    ggsave(plot=p, file.path(outdir,paste(s,suffix,sep='_')),width=8,height=8)
-    fit
-}
-
 
 ##' get_ascn_segments
 ##'
 ##' Extract a table of copy number segments with purity/ploidy-corrected allele-specific copy number
 ##'
 ##' @export
-
-get_ascn_segments <- function(obj, fit_file, normal_name, min_purity=0.1) {
+get_ascn_segments <- function(obj, fit_file, normal_sample, min_purity=0.1) {
     message('Extracting purity/ploidy-corrected ASCN segment data ...')
     fits <- fread(fit_file)
     fits <- fits[pu >= min_purity,]
@@ -372,7 +407,7 @@ get_ascn_segments <- function(obj, fit_file, normal_name, min_purity=0.1) {
 
     ## add Normal segment pseudo-values
     toadd <- segs[!duplicated(segment),]
-    toadd[,sample:=normal_name]
+    toadd[,sample:=normal_sample]
     toadd[Chromosome %in% 1:22,c('na','nb'):=list(1,1)]
     sex <- obj$main_params$sex
     if(sex=='XX') {
@@ -393,5 +428,145 @@ get_ascn_segments <- function(obj, fit_file, normal_name, min_purity=0.1) {
     segs[!is.na(na) & is.na(nb),tcn:=na]
     segs
 }
+
+
+##' plot_tcn_heatmap
+##'
+##' generate a heatmap with total copy number, a NJ tree based on TCN, and a barplot annotating tumor purity
+##'
+##' @export
+plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample) {
+
+    ## angular distance tree from segment LogRs
+    tcn_mat <- d2m(data.table::dcast(segment ~ sample, value.var='tcn', data=segs))
+    tcn_mat <- tcn_mat[!is.na(rowSums(tcn_mat)),]
+
+    long <- as.data.table(reshape2::melt(tcn_mat))
+    names(long) <- c('segment','sample','value')
+    segs <- merge(long, obj$segments, by='segment', all.x=T)
+
+    ## get angular distance matrix/tree
+    dm <- dist(t(tcn_mat), method='manhattan')
+    tree_tcn <- nj(dm)
+    tree_tcn <- phytools::reroot(tree_tcn, which(tree_tcn$tip.label==normal_sample))
+
+    setnames(segs,c('Chromosome'),c('chr'))
+    segs$sample <- as.character(segs$sample)
+    message('Expanding segments to include NA regions in each chromosome ...')
+
+    if(sex=='XX') {
+        valid_chr <- c(1:22,'X')
+    } else {
+        valid_chr <- c(1:22,'X','Y')
+    }
+
+    expand_segments_to_complete_chromosome_for_sample <- function(this.sample, segs, gr_chr) {
+        message(this.sample)
+        mat_sample <- segs[sample==this.sample,]
+        mat_sample$chr <- factor(mat_sample$chr, levels(seqnames(gr_chr)))
+        mat_sample <- mat_sample[order(chr)]
+        gr_mat_sample <- makeGRangesFromDataFrame(mat_sample,keep.extra.columns=T,ignore.strand=T,seqnames='chr',start.field='seg_start', end.field='seg_end')
+        NA_regions <- BiocGenerics::setdiff(gr_chr, gr_mat_sample)
+        complete_regions <- as.data.table(sort(c(gr_mat_sample, NA_regions)))
+        complete_regions$sample <- this.sample
+        complete_regions[,segment:=paste0(seqnames,':',start,'-',end)]
+        setnames(complete_regions,'seqnames','chr')
+        complete_regions <- complete_regions[order(chr, start, end),]
+        ## collapse regions with no difference in copy number
+        complete_regions$sample <- this.sample
+        complete_regions
+    }
+
+    gd <- genome_data(build)$chr
+    gd <- gd[chr %in% valid_chr]
+    gd$chr <- factor(gd$chr, levels=valid_chr)
+    gd[,chr_start:=chr_start * 1e6]
+    gd[,chr_end:=chr_end * 1e6]
+
+    segs <- segs[chr %in% valid_chr,]
+    segs$chr <- factor(segs$chr, levels=valid_chr)
+    gr_chr <- makeGRangesFromDataFrame(gd,keep.extra.columns=T,ignore.strand=T,seqnames='chr',start.field='chr_start', end.field='chr_end')
+    sample_list <- lapply(unique(segs$sample), expand_segments_to_complete_chromosome_for_sample, segs, gr_chr)
+    segs <- rbindlist(sample_list)
+
+    segs <- merge(segs, gd[,c('chr','global_start'),with=F], by='chr', all.x=T)
+    segs[,global_seg_start_mb:=global_start + start/1e6]
+    segs[,global_seg_end_mb:=global_start + end/1e6]
+    segs <- segs[chr %in% valid_chr]
+    segs$chr <- factor(segs$chr, levels=valid_chr)
+    segs[,segment:=paste0(chr,':',start,'-',end)]
+
+    blues <- brewer.pal(9,'RdBu')[c(9,7)]
+    reds <-  c(brewer.pal(9, 'OrRd')[c(1,3,5,7,9)],'black')
+    cols <- c(blues, 'white', reds,'#bfbfbf')
+    names(cols) <- c(seq(0,7,by=1),'8+','n/a')
+
+    segs$tcn.i <- round(segs$value)
+    segs$tcn.f <- as.character(segs$tcn.i)
+    segs[is.na(tcn.i), tcn.f:='n/a']
+    segs[tcn.i >= 8, tcn.f:='8+']
+    segs[tcn.i < 0, tcn.f:='0']
+    segs$tcn.f <- factor(segs$tcn.f, levels=c(0:7,'8+','n/a'))
+    segs[value > 8, value:=8]
+
+    p1 <- ggtree(tree_tcn, linewidth=0.5)
+    p1 <- p1 + guides(fill='none') + theme(legend.position='none') + labs(title=patient, subtitle='TCN NJ tree')
+    p1 <- p1 %<+% groups
+    pd <- as.data.table(p1$data)
+    pd <- pd[isTip==T,]
+    pd <- pd[order(y,decreasing=F),]
+    pd$label <- factor(pd$label, levels=pd$label)
+    segs$sample <- factor(segs$sample, levels=pd$label)
+    segs$sample.i <- as.integer(segs$sample)
+    p1 <- p1 + geom_tiplab(aes(color=group))
+    p1 <- p1 + scale_color_manual(values=group_colors,name='Sample type')
+    p1 <- p1 + xlim(0, 1.15*max(p1$data$x))
+
+    gd2 <- copy(gd)
+    chr19_22 <- gd[chr==19,]
+    chr19_22$length <- sum(gd[chr %in% c(19,20,21,22),(length)])
+    chr19_22[,global_midpoint:=global_start+0.5*length]
+    chr19_22[,global_end:=global_start+length]
+    chr19_22$chr <- '19-22'
+    gd2 <- gd2[!chr %in% c(19,20,21,22)]
+    gd2 <- rbind(gd2, chr19_22) 
+    gd2 <- gd2[order(global_midpoint),]
+
+    right_labs <- data.table(sample=levels(segs$sample))
+    right_labs$sample <- factor(right_labs$sample, levels=right_labs$sample)
+    right_labs$sample.i <- as.integer(right_labs$sample)
+    right_labs[,y:=sample.i]
+
+    p2 <- ggplot(segs) + 
+        scale_x_continuous(expand=c(0,-0.1), breaks=gd2$global_midpoint, labels=gd2$chr) + 
+        scale_y_continuous(expand=c(0,0), breaks=right_labs$y, labels=right_labs$sample, position='right') + 
+        geom_rect(aes(ymin=sample.i-0.5, ymax=sample.i+0.5, xmin=global_seg_start_mb, xmax=global_seg_end_mb, fill=tcn.f)) + 
+        scale_fill_manual(values=cols, na.value='#bfbfbf',name='TCN (nearest integer)') +
+        #scale_fill_gradient2(low='blue', mid='white', high='red', midpoint=2, na.value='#bfbfbf',name='True TCN') +
+        geom_vline(xintercept=c(0,tail(gd$global_end,1)), linewidth=0.5, linetype='solid') +
+        geom_hline(yintercept=seq(min(segs$sample.i)-0.5,max(segs$sample.i)+0.5), linewidth=0.25, linetype='solid') + 
+        geom_vline(xintercept=tail(gd$global_start,-1), linewidth=0.25, linetype='dotted') + 
+        guides(color='none') +
+        theme_ang(base_size=10) +
+        labs(x='Genomic Position', y=NULL, title='', subtitle='Purity/ploidy-corrected total copy number') +
+        theme(axis.line=element_blank(), legend.position='bottom', axis.ticks=element_blank(), axis.text.y=element_blank())
+
+    pd_fits <- data.table(sample=right_labs$sample)
+    pd_fits <- merge(pd_fits, fits, by='sample', all.x=T)
+    pd_fits[sample==normal_sample,c('pl','pu'):=list(2,0)]
+    pd_fits$sample <- factor(pd_fits$sample, levels=right_labs$sample)
+    p3 <- ggplot(pd_fits, aes(x=sample, y=pu)) +  
+        scale_y_continuous(expand=c(0,0)) + 
+        geom_bar(stat='identity')  +
+        coord_flip() +
+        theme_ang(base_size=10) +
+        labs(x=NULL, y='Purity') + 
+        theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+    p <- plot_grid(p1, p2, p3, nrow=1, rel_widths=c(1.5,3,0.5), align='h', axis='tb')
+    p
+}
+
+
 
 
