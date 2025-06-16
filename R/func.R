@@ -166,6 +166,12 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
         patient <- obj$main_params$patient
     } 
     
+    sex <- obj$main_params$sex
+    if(sex=='XX') {
+        valid_chr <- c(1:22,'X')
+    } else {
+        valid_chr <- c(1:22,'X','Y')
+    }
 
     if(is.null(obj) & (is.null(segs) | is.null(build))) stop('Must provide either [obj] OR ([segs] AND [build])') 
 
@@ -179,6 +185,8 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     long <- as.data.table(reshape2::melt(LogR_mat))
     names(long) <- c('segment','sample','value')
     segs <- merge(long, obj$segments, by='segment', all.x=T)
+    segs <- segs[Chromosome %in% valid_chr,]
+    segs$Chromosome <- factor(segs$Chromosome, levels=valid_chr)
 
     ## get angular distance matrix/tree
     numerator <- t(LogR_mat) %*% LogR_mat
@@ -199,6 +207,7 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     message('Expanding segments to include NA regions in each chromosome ...')
 
     expand_segments_to_complete_chromosome_for_sample <- function(this.sample, segs, gr_chr) {
+        #browser()
         message(this.sample)
         mat_sample <- segs[sample==this.sample,]
         mat_sample$chr <- factor(mat_sample$chr, levels(seqnames(gr_chr)))
@@ -216,8 +225,8 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     }
 
     gd <- genome_data(build)$chr
-    gd <- gd[chr %in% c(1:22,'X')]
-    gd$chr <- factor(gd$chr, levels=c(1:22,'X'))
+    gd <- gd[chr %in% valid_chr]
+    gd$chr <- factor(gd$chr, levels=valid_chr)
     gd[,chr_start:=chr_start * 1e6]
     gd[,chr_end:=chr_end * 1e6]
 
@@ -228,8 +237,8 @@ plot_copynumber_angular_distance <- function(obj=NULL, segs=NULL, build=NULL, gr
     segs <- merge(segs, gd[,c('chr','global_start'),with=F], by='chr', all.x=T)
     segs[,global_seg_start_mb:=global_start + start/1e6]
     segs[,global_seg_end_mb:=global_start + end/1e6]
-    segs <- segs[chr %in% c(1:22,'X')]
-    segs$chr <- factor(segs$chr, levels=c(1:22,'X'))
+    segs <- segs[chr %in% valid_chr]
+    segs$chr <- factor(segs$chr, levels=valid_chr)
     segs[,segment:=paste0(chr,':',start,'-',end)]
 
     ## add values for the diploid normal
