@@ -90,7 +90,7 @@ Once this has finished running, your directory should be populated with **six fi
 <PatientID>_<TumorID>_<NormalID>_Germline_BAF_rawBAF.txt
 ```
 
-### 2a.2 Generate CNAlignR input data (.rds files)
+### 2a.2 Generate CNAlignR input data (.rds file)
 
 With the CNAlignR conda environment still activated, use the provided R script to merge these sample files together and create the input data R object for CNAlignR. This will likely require **at least 32GB of RAM** and may take **a few hours to complete** (depending on the number of samples).
 ```bash
@@ -127,17 +127,39 @@ For lpWGS data, the input data to CNAlignR is generated with a custom workflow (
 - A pileup.gz file containing read counts supporting the REF and ALT alleles for all tumor+normal samples at the phased heterozygous SNPs (via snp-pileup)
 - A .rds file of GC-corrected binned read counts for all tumor+normal samples (via QDNAseq)
 
-With the CNAlignR conda environment still activated, use the provided R script to merge these three files together and create the input data R object for CNAlignR. This will likely require **at least 32GB of RAM** and may take **a few hours to complete** (depending on the number of samples).
+### 2b.2 Generate CNAlignR input data (.rds file)
+In R, the CNAlignR function get_CNAlignR_obj_for_bin_data() will load these input files and create a data object for use with CNAlignR. The following R script can be used to do this:
 
-```bash
+```r
 # example command to generate input data object for one patient.
-Rscript ~/repos/CNAlignR/scripts/merge_alleleCounter_data.R \
-  --patient C66         # <PatientID> \
-  --normal_sample c66N3 # <NormalID>  \
-  --sex XX              # XX|XY       \
-  --build hg19          # hg19|hg38   \
-  --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
-  --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt \
-  --obj_file            # <PatientID>_CNAlignR_obj.rds
+library(CNAlignR)
+
+## define input arguments/parameters
+phased_bcf <- 'glimpse/LM6_N1_ligated_cleaned.bcf'
+pileup_data <- 'LM6_N1_ligated_cleaned.pileup.gz'
+qdnaseq_data <- 'LM6_100kbp_withXYM_hg38.rds'
+sample_map <- 'LM6_CNAlign_sample_info.txt'
+patient <- 'LM6'
+sex <- 'XX'
+normal_sample <- 'Normal1'
+build <- 'hg38'
+data_dir <- '.'
+seed=42
+
+## get CNalign data object for lowpass input data
+obj <- get_CNAlignR_obj_for_bin_data(qdnaseq_data=qdnaseq_data,
+                                    pileup_data=pileup_data,
+                                    phased_bcf=phased_bcf,
+                                    sample_map=sample_map,
+                                    patient=patient,
+                                    sex=sex,
+                                    normal_sample=normal_sample,
+                                    build=build,
+                                    data_dir=data_dir,
+                                    seed=seed)
+
+## save the CNalign data object 'obj' to file
+saveRDS(obj, file=file.path(data_dir,paste0(patient,'_CNAlignR_obj.rds')))
+```
 
 
