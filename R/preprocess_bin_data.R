@@ -4,7 +4,7 @@
 ##' Create preprocessed data from snp-pileup, QDNAseq, and GLIMPSE output.
 ##'
 ##' @export
-preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_range_allowed, LogR_winsor_percentiles, LogR_smooth_bins, normal_correction) { 
+preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_range_allowed, LogR_winsor_percentiles, LogR_smooth_bins, normal_correction, imbalance_alpha=0.05) { 
 
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
@@ -153,60 +153,50 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     test_blocks <- function(qc,tumor_samples) { 
         x <- as.numeric(qc[,paste0(tumor_samples,'.x'),with=F]) 
         y <- as.numeric(qc[,paste0(tumor_samples,'.y'),with=F]) 
-        sum_x <- sum(x)
-        sum_y <- sum(y)
-        suppressWarnings(p <- wilcox.test(x, y, paired=T, alternative='two.sided')$p.value)
-        lfc <- log2(mean(y) / mean(x))
-        list(p=p, lfc=lfc, sum_x=sum_x, sum_y=sum_y)
+        z <- y - x
+        n <- length(z)
+        suppressWarnings(w <- wilcox.test(z, mu = 0, exact = FALSE, correct = FALSE))
+        p = as.numeric(w$p.value)
+        W = w$statistic
+        mean_W = n * (n + 1) / 4
+        sd_W = sqrt(n * (n + 1) * (2 * n + 1) / 24)
+        z_score = (W - mean_W) / sd_W
+        effsize = z_score / sqrt(n)
+        dp <- sum(x) + sum(y)
+        list(p=p, effsize=effsize, dp=dp)
     }
     block_summary <- block_counts[,test_blocks(.SD, tumor_samples),by=c('bin','block')]
 
-    correct_blocks <- function(block_summary, alpha=0.1) {
+    get_block_fdr_per_bin <- function(block_summary, alpha) {
         ## annotate all blocks in a bin with the q-val and LFC for the MOST SIGNIFICANT block
         ## if there are multiple significant blocks with LFCs in different directions, note this as problematic
+        ## if there were no significant blocks in the bin, we will discard the BAF for this bin
         block_summary$q <- p.adjust(block_summary$p, method='BH')
-        block_summary$problematic <- any(block_summary[q < alpha,(lfc)] < 0) & any(block_summary[q < alpha,(lfc) > 0])
-        block_summary <- block_summary[order(q, decreasing=F),]
-        block_summary[1,c('p','q','lfc','problematic')]
-    }
-    block_summary <- block_summary[,correct_blocks(.SD),by=bin]
-
-    ## in every bin with a significant block, annotate its q-val and LFC (NB: LFC > 0 means .y > .x)
-    setnames(block_summary,c('p','q','lfc'),c('bin_p','bin_q','bin_lfc'))
-    block_counts <- merge(block_counts, block_summary[,c('bin','bin_p','bin_q','bin_lfc'),with=F], by='bin', all.x=T)
-    x_samples <- paste0(samples,'.x')
-    y_samples <- paste0(samples,'.y')
-    x_counts <- block_counts[,(x_samples),with=F]
-    y_counts <- block_counts[,(y_samples),with=F]
-    block_counts$block_lfc <- log2(rowSums(y_counts) / rowSums(x_counts))
-
-    ## reorient blocks so that their x,y orientations match that of the most-significant block in each bin 
-    reorient_blocks <- function(current_block_counts, x_samples, y_samples) {
-        different_directions <- current_block_counts$block_lfc * current_block_counts$bin_lfc < 0
-        if(different_directions==T & !is.na(different_directions)) { 
-            current_x_counts <- current_block_counts[,(x_samples),with=F]
-            current_y_counts <- current_block_counts[,(y_samples),with=F]
-            current_block_counts[,(x_samples)] <- current_y_counts
-            current_block_counts[,(y_samples)] <- current_x_counts
+        n_sig_neg <- sum(block_summary$q < alpha & block_summary$effsize < 0,na.rm=T)
+        n_sig_pos <- sum(block_summary$q < alpha & block_summary$effsize > 0,na.rm=T)
+        out <- block_summary[order(q, decreasing=F),]
+        if(n_sig_neg + n_sig_pos == 0) {
+            out$result <- 'no significant imbalance'
+        } else if(n_sig_neg > 0 & n_sig_pos > 0) {
+            out$result <- 'discordant signal'
+        } else {
+            out$result <- 'imbalanced'
         }
-        current_block_counts       
-    } 
-    realigned_block_counts <- block_counts[,reorient_blocks(.SD, x_samples, y_samples),by=block]
-    new_x_counts <- realigned_block_counts[,(x_samples),with=F]
-    new_y_counts <- realigned_block_counts[,(y_samples),with=F]
-    realigned_block_counts$block_lfc <- log2(rowSums(new_y_counts) / rowSums(new_x_counts))
-
-    ## for realigned blocks, collapse to bin-level data
-    collapse_bins <- function(realigned_block_counts, x_samples, y_samples) {
-        out <- realigned_block_counts[1,c('bin_p','bin_q','bin_lfc'),with=F]
-        current_x_counts <- realigned_block_counts[,(x_samples),with=F]
-        current_y_counts <- realigned_block_counts[,(y_samples),with=F]
-        current_x_counts <- colSums(current_x_counts)
-        current_y_counts <- colSums(current_y_counts)
-        out <- cbind(out, as.data.table(as.list(c(current_x_counts, current_y_counts))))
-        out
+        out[,c('p','q','effsize','result','dp')]
     }
-    collapsed_bin_counts <- realigned_block_counts[,collapse_bins(.SD, x_samples, y_samples),by=bin]
+    block_summary <- block_summary[,get_block_fdr_per_bin(.SD, alpha=imbalance_alpha),by=block]
+
+    ## in every bin with a significant block, annotate its q-val and effsize (NB: effsize > 0 means .y > .x)
+    block_counts <- merge(block_counts, block_summary, by='block', all.x=T)
+
+    # discard the bins with discordant signals
+    block_counts <- block_counts[result!='discordant signal',]
+    
+    # in bins with multiple blocks, choose the most-significant as the representative block
+    collapsed_bin_counts = block_counts[order(bin, q, decreasing=F),]
+    collapsed_bin_counts <- collapsed_bin_counts[!duplicated(bin),]
+    collapsed_bin_counts <- collapsed_bin_counts[order(bin),]
+    setnames(collapsed_bin_counts,c('p','q','effsize','result','dp'),c('bin_p','bin_q','bin_effsize','bin_status','bin_dp')) 
 
     ## get BAFs for each bin/sample based on x,y counts
     tumors.x <- paste0(tumor_samples,'.x')
@@ -216,7 +206,7 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     samples.x <- paste0(samples,'.x')
     samples.y <- paste0(samples,'.y')
     
-    res.x <- melt(collapsed_bin_counts[,c('bin','bin_p','bin_q','bin_lfc',samples.x),with=F], id.vars=c('bin','bin_p','bin_q','bin_lfc'))
+    res.x <- melt(collapsed_bin_counts[,c('bin','bin_p','bin_q','bin_effsize','bin_status','bin_dp',samples.x),with=F], id.vars=c('bin','bin_p','bin_q','bin_effsize','bin_status','bin_dp'))
     res.x[,variable:=gsub('[.]x','',as.character(variable))] 
     setnames(res.x,'value','count.x')
     res.y <- melt(collapsed_bin_counts[,c('bin',samples.y),with=F], id.vars=c('bin'))
@@ -238,7 +228,6 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     d[,position:=round((bin_start + bin_end - 1)/2)]
     d <- d[order(chr,position,sample),]
 
-    #browser()
     message('Adding chr-arms ...')
     arms <- genome_data(build)$arms
     arms[,arm_start:=arm_start*1e6]  

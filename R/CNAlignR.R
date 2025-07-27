@@ -5,7 +5,7 @@
 ##' @export
 run_CNAlign <- function(dat, gurobi_license, py_script=NA, min_ploidy=1.7, max_ploidy=6.0, min_purity=0.05, max_purity=0.95, min_aligned_seg_mb=5.0, max_homdel_mb=100.0, 
                     delta_tcn_to_int=0.2, delta_tcn_to_avg=0.1, delta_tcnavg_to_int=0.1, delta_mcn_to_int=0.2, delta_mcn_to_avg=0.1, delta_mcnavg_to_int=0.1, 
-                    rho=1.0, timeout=3*60, min_cna_segments_per_sample=1, mcn_weight=0.5, obj2_clonalonly=F, sol_count=10) {
+                    rho=1.0, timeout=3*60, min_cna_segments_per_sample=1, mcn_weight=0.5, obj2_clonalonly=F, sol_count=10, max_tcn_avg_int=100, tcn_only=F) {
                 
     require(lubridate)
     require(reticulate)
@@ -18,11 +18,19 @@ run_CNAlign <- function(dat, gurobi_license, py_script=NA, min_ploidy=1.7, max_p
 	start_time <- now()
 	message('Started CNAlign at ',as.character(start_time))
 
+    if(tcn_only) {
+        message('Running in TCN-only mode.')
+        mcn_weight <- 0
+        delta_mcn_to_int <- Inf
+        delta_mcn_to_avg <- Inf
+        delta_mcnavg_to_int <- Inf
+    }
+
     df <- CNAlign(dat, gurobi_license, min_ploidy, max_ploidy, min_purity, max_purity, 
                   min_aligned_seg_mb, max_homdel_mb, 
                   delta_tcn_to_int, delta_tcn_to_avg, delta_tcnavg_to_int, 
                   delta_mcn_to_int, delta_mcn_to_avg, delta_mcnavg_to_int, 
-                  mcn_weight, rho, timeout, min_cna_segments_per_sample, obj2_clonalonly, sol_count)
+                  mcn_weight, rho, timeout, min_cna_segments_per_sample, obj2_clonalonly, sol_count, max_tcn_avg_int)
 
 	end_time <- now()
 	run_date <- as.character(format(end_time,format='%Y-%m-%d %H:%M'))
@@ -30,7 +38,7 @@ run_CNAlign <- function(dat, gurobi_license, py_script=NA, min_ploidy=1.7, max_p
     sec_elapsed <- round(as.numeric(end_time) - as.numeric(start_time))
     message('Time elapsed: ',sec_elapsed,'s')
 
-    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight, obj2_clonalonly=obj2_clonalonly, sol_count=sol_count)
+    params <- list(min_ploidy=min_ploidy, max_ploidy=max_ploidy, min_purity=min_purity, max_purity=max_purity, min_aligned_seg_mb=min_aligned_seg_mb, max_homdel_mb=max_homdel_mb, delta_tcn_to_int=delta_tcn_to_int, delta_tcn_to_avg=delta_tcn_to_avg, delta_tcnavg_to_int=delta_tcnavg_to_int, delta_mcn_to_int=delta_mcn_to_int, delta_mcn_to_avg=delta_mcn_to_avg, delta_mcnavg_to_int=delta_mcnavg_to_int, rho=rho, gurobi_license=license, timeout=timeout, min_cna_segments_per_sample=min_cna_segments_per_sample, mcn_weight=mcn_weight, obj2_clonalonly=obj2_clonalonly, sol_count=sol_count, max_tcn_avg_int=max_tcn_avg_int)
 
     # return the model object and a list of all the parameters
     out <- list(df=df, params=params)
