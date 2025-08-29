@@ -435,7 +435,7 @@ get_ascn_segments <- function(obj, fit_file, normal_sample, min_purity=0.1) {
 ##' generate a heatmap with total copy number, a NJ tree based on TCN, and a barplot annotating tumor purity
 ##'
 ##' @export
-plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample) {
+plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample, plot_fractional_tcn=F) {
 
     ## angular distance tree from segment LogRs
     tcn_mat <- d2m(data.table::dcast(segment ~ sample, value.var='tcn', data=segs))
@@ -500,15 +500,7 @@ plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, norma
     reds <-  c(brewer.pal(9, 'OrRd')[c(1,3,5,7,9)],'black')
     cols <- c(blues, 'white', reds,'#bfbfbf')
     names(cols) <- c(seq(0,7,by=1),'8+','n/a')
-
-    segs$tcn.i <- round(segs$value)
-    segs$tcn.f <- as.character(segs$tcn.i)
-    segs[is.na(tcn.i), tcn.f:='n/a']
-    segs[tcn.i >= 8, tcn.f:='8+']
-    segs[tcn.i < 0, tcn.f:='0']
-    segs$tcn.f <- factor(segs$tcn.f, levels=c(0:7,'8+','n/a'))
-    segs[value > 8, value:=8]
-
+  
     p1 <- ggtree(tree_tcn, linewidth=0.5)
     p1 <- p1 + guides(fill='none') + theme(legend.position='none') + labs(title=patient, subtitle='TCN NJ tree')
     p1 <- p1 %<+% groups
@@ -537,20 +529,55 @@ plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, norma
     right_labs$sample.i <- as.integer(right_labs$sample)
     right_labs[,y:=sample.i]
 
-    p2 <- ggplot(segs) + 
-        scale_x_continuous(expand=c(0,-0.1), breaks=gd2$global_midpoint, labels=gd2$chr) + 
-        scale_y_continuous(expand=c(0,0), breaks=right_labs$y, labels=right_labs$sample, position='right') + 
-        geom_rect(aes(ymin=sample.i-0.5, ymax=sample.i+0.5, xmin=global_seg_start_mb, xmax=global_seg_end_mb, fill=tcn.f)) + 
-        scale_fill_manual(values=cols, na.value='#bfbfbf',name='TCN (nearest integer)') +
-        #scale_fill_gradient2(low='blue', mid='white', high='red', midpoint=2, na.value='#bfbfbf',name='True TCN') +
-        geom_vline(xintercept=c(0,tail(gd$global_end,1)), linewidth=0.5, linetype='solid') +
-        geom_hline(yintercept=seq(min(segs$sample.i)-0.5,max(segs$sample.i)+0.5), linewidth=0.25, linetype='solid') + 
-        geom_vline(xintercept=tail(gd$global_start,-1), linewidth=0.25, linetype='dotted') + 
-        guides(color='none') +
-        theme_ang(base_size=10) +
-        labs(x='Genomic Position', y=NULL, title='', subtitle='Purity/ploidy-corrected total copy number') +
-        theme(axis.line=element_blank(), legend.position='bottom', axis.ticks=element_blank(), axis.text.y=element_blank())
-
+    if(plot_fractional_tcn==F) { 
+        segs$tcn.i <- round(segs$value)
+        segs$tcn.f <- as.character(segs$tcn.i)
+        segs[is.na(tcn.i), tcn.f:='n/a']
+        segs[tcn.i >= 8, tcn.f:='8+']
+        segs[tcn.i < 0, tcn.f:='0']
+        segs$tcn.f <- factor(segs$tcn.f, levels=c(0:7,'8+','n/a'))
+        segs[value > 8, value:=8]
+ 
+        p2 <- ggplot(segs) + 
+            scale_x_continuous(expand=c(0,-0.1), breaks=gd2$global_midpoint, labels=gd2$chr) + 
+            scale_y_continuous(expand=c(0,0), breaks=right_labs$y, labels=right_labs$sample, position='right') + 
+            geom_rect(aes(ymin=sample.i-0.5, ymax=sample.i+0.5, xmin=global_seg_start_mb, xmax=global_seg_end_mb, fill=tcn.f)) + 
+            scale_fill_manual(values=cols, na.value='#bfbfbf',name='TCN (nearest integer)') +
+            geom_vline(xintercept=c(0,tail(gd$global_end,1)), linewidth=0.5, linetype='solid') +
+            geom_hline(yintercept=seq(min(segs$sample.i)-0.5,max(segs$sample.i)+0.5), linewidth=0.25, linetype='solid') + 
+            geom_vline(xintercept=tail(gd$global_start,-1), linewidth=0.25, linetype='dotted') + 
+            guides(color='none') +
+            theme_ang(base_size=10) +
+            labs(x='Genomic Position', y=NULL, title='', subtitle='Purity/ploidy-corrected total copy number') +
+            theme(axis.line=element_blank(), legend.position='bottom', axis.ticks=element_blank(), axis.text.y=element_blank())
+    } else {
+        require(scales)
+        segs[,tcn:=value]
+        segs[tcn >= 8, tcn:=8]
+        segs[tcn < 0, tcn:=0]
+ 
+        fcols = cols[0:9]; names(fcols) <- seq(0:8)
+        p2 <- ggplot(segs) + 
+            scale_x_continuous(expand=c(0,-0.1), breaks=gd2$global_midpoint, labels=gd2$chr) + 
+            scale_y_continuous(expand=c(0,0), breaks=right_labs$y, labels=right_labs$sample, position='right') + 
+            geom_rect(aes(ymin=sample.i-0.5, ymax=sample.i+0.5, xmin=global_seg_start_mb, xmax=global_seg_end_mb, fill=tcn)) + 
+            scale_fill_gradientn(
+                colours = fcols,
+                limits  = c(0,8),
+                values  = rescale(seq(0, 8, length.out = length(fcols)), to = c(0, 1)),
+                oob     = squish,
+                name = 'TCN',
+                na.value='#bfbfbf'
+                ) +
+            geom_vline(xintercept=c(0,tail(gd$global_end,1)), linewidth=0.5, linetype='solid') +
+            geom_hline(yintercept=seq(min(segs$sample.i)-0.5,max(segs$sample.i)+0.5), linewidth=0.25, linetype='solid') + 
+            geom_vline(xintercept=tail(gd$global_start,-1), linewidth=0.25, linetype='dotted') + 
+            guides(color='none') +
+            theme_ang(base_size=10) +
+            labs(x='Genomic Position', y=NULL, title='', subtitle='Purity/ploidy-corrected total copy number') +
+            theme(axis.line=element_blank(), legend.position='bottom', axis.ticks=element_blank(), axis.text.y=element_blank())   
+    }
+    
     pd_fits <- data.table(sample=right_labs$sample)
     pd_fits <- merge(pd_fits, fits, by='sample', all.x=T)
     pd_fits[sample==normal_sample,c('pl','pu'):=list(2,0)]
