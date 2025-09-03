@@ -435,7 +435,7 @@ get_ascn_segments <- function(obj, fit_file, normal_sample, min_purity=0.1) {
 ##' generate a heatmap with total copy number, a NJ tree based on TCN, and a barplot annotating tumor purity
 ##'
 ##' @export
-plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample, plot_fractional_tcn=F) {
+plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample, patient, plot_fractional_tcn=F) {
 
     ## angular distance tree from segment LogRs
     tcn_mat <- d2m(data.table::dcast(segment ~ sample, value.var='tcn', data=segs))
@@ -443,7 +443,8 @@ plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, norma
 
     long <- as.data.table(reshape2::melt(tcn_mat))
     names(long) <- c('segment','sample','value')
-    segs <- merge(long, obj$segments, by='segment', all.x=T)
+    seg_info <- segs[!duplicated(segment),c('Chromosome','segment','arm','germline_copies','seg_start','seg_end','n_markers','seg_length','global_seg_start_mb','global_seg_end_mb'),with=F]
+    segs <- merge(long, seg_info, by='segment', all.x=T)
 
     ## get angular distance matrix/tree
     dm <- dist(t(tcn_mat), method='manhattan')
