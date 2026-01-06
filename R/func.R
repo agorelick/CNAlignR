@@ -435,7 +435,7 @@ get_ascn_segments <- function(obj, fit_file, normal_sample, min_purity=0.1) {
 ##' generate a heatmap with total copy number, a NJ tree based on TCN, and a barplot annotating tumor purity
 ##'
 ##' @export
-plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample, patient, plot_fractional_tcn=F) {
+plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, normal_sample, patient, plot_fractional_tcn=F, rel_widths=c(1.5,3,0.5), tree_heat_xspace=1.15) {
 
     ## angular distance tree from segment LogRs
     tcn_mat <- d2m(data.table::dcast(segment ~ sample, value.var='tcn', data=segs))
@@ -513,7 +513,7 @@ plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, norma
     segs$sample.i <- as.integer(segs$sample)
     p1 <- p1 + geom_tiplab(aes(color=group))
     p1 <- p1 + scale_color_manual(values=group_colors,name='Sample type')
-    p1 <- p1 + xlim(0, 1.15*max(p1$data$x))
+    p1 <- p1 + xlim(0, tree_heat_xspace*max(p1$data$x))
 
     gd2 <- copy(gd)
     chr19_22 <- gd[chr==19,]
@@ -591,7 +591,7 @@ plot_tcn_heatmap <- function(segs, fits, groups, group_colors, sex, build, norma
         labs(x=NULL, y='Purity') + 
         theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
 
-    p <- plot_grid(p1, p2, p3, nrow=1, rel_widths=c(1.5,3,0.5), align='h', axis='tb')
+    p <- plot_grid(p1, p2, p3, nrow=1, rel_widths=rel_widths, align='h', axis='tb')
     p
 }
 
