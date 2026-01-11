@@ -102,7 +102,7 @@ Rscript ~/repos/CNAlignR/scripts/merge_alleleCounter_data.R \
   --build hg19          # hg19|hg38   \
   --GCcontentfile ~/data/alex/reference_data/ascat/GC_G1000_hg19.txt \
   --replictimingfile ~/data/alex/reference_data/ascat/RT_G1000_hg19.txt \
-  --obj_file            # <PatientID>_CNAlignR_obj.rds
+  --obj_file C66_CNAlignR_obj.rds # <PatientID>_CNAlignR_obj.rds
 ```
 
 Your directory should now have three .rds files with the (default) filenames as below. **Consider these the input data for CNAlignR.**
