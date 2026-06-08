@@ -132,34 +132,42 @@ In R, the CNAlignR function get_CNAlignR_obj_for_bin_data() will load these inpu
 
 ```r
 # example command to generate input data object for one patient.
+setwd('TOP DIRECTORY FOR THIS PATIENT')
 library(CNAlignR)
 
 ## define input arguments/parameters
-phased_bcf <- 'glimpse/LM6_N1_ligated_cleaned.bcf'
-pileup_data <- 'LM6_N1_ligated_cleaned.pileup.gz'
-qdnaseq_data <- 'LM6_100kbp_withXYM_hg38.rds'
-sample_map <- 'LM6_CNAlign_sample_info.txt'
-patient <- 'LM6'
-sex <- 'XX'
-normal_sample <- 'Normal1'
-build <- 'hg38'
-data_dir <- '.'
-seed=42
+phased_bcf <- 'original_data/SD13_NC2-1_ligated_cleaned.bcf'
+pileup_data <- 'original_data/SD13_NC2-1_ligated_cleaned.pileup.gz'
+qdnaseq_data <- 'original_data/SD13_500kbp_withXYM_hg38.rds'
+sample_map <- 'original_data/SD13new_sample_map.txt'
+patient <- 'SD13'
+data_dir <- 'processed_data' # output directory
+sex <- 'XX'                  # use XX/XY
+normal_sample <- 'NC2-1'     # this should match the normal's "proper_name" in the sample map
+build <- 'hg38'              # hg19/hg38
+seed <- 42
 
 ## get CNalign data object for lowpass input data
 obj <- get_CNAlignR_obj_for_bin_data(qdnaseq_data=qdnaseq_data,
-                                    pileup_data=pileup_data,
-                                    phased_bcf=phased_bcf,
-                                    sample_map=sample_map,
-                                    patient=patient,
-                                    sex=sex,
-                                    normal_sample=normal_sample,
-                                    build=build,
-                                    data_dir=data_dir,
-                                    seed=seed)
+                                     pileup_data=pileup_data,
+                                     phased_bcf=phased_bcf,
+                                     sample_map=sample_map,
+                                     patient=patient,
+                                     sex=sex,
+                                     normal_sample=normal_sample,
+                                     build=build,
+                                     data_dir=data_dir,
+                                     seed=seed
+                                     cleanup=F)
 
 ## save the CNalign data object 'obj' to file
 saveRDS(obj, file=file.path(data_dir,paste0(patient,'_CNAlignR_obj.rds')))
+
+## plot the LogR data using angular distance (which reflects the TCN with a simple purity-correction)
+## Note: This should NOT be considered the final TCN phylogeny or segmented copy number data,
+## this is for QC of the input data and a basic sense of sample clustering
+plot_tcn_angular_distance_heatmap(obj, normal_sample = normal_sample)
+
 ```
 
 
