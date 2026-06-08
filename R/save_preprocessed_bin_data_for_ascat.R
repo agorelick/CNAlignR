@@ -4,7 +4,7 @@
 ##'
 ##' @export
 save_preprocessed_bin_data_for_ascat <- function(preprocessed_data, normal_sample, sex, Tumor_LogR_file, Tumor_BAF_file, Germline_LogR_file, Germline_BAF_file) {
-
+    #browser()
     if(sex=='XX') {
         valid_chr <- c(1:22,'X')
     } else {

@@ -6,6 +6,7 @@
 ##' @export
 preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, normal_sample, sex, build, max_phaseable_distance, min_bin_reads_for_baf, blacklisted_regions_file, LogR_range_allowed, LogR_winsor_percentiles, LogR_smooth_bins, normal_correction, imbalance_alpha=0.05) { 
 
+    #browser()
     all_chrs <- c(1:22,'X','Y','MT')
     if(sex=='XX') {
         diploid_chrs <- c(1:22,'X')
@@ -246,8 +247,10 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     if(normal_correction==0) {
         ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
         .get_LogR <- function(d) {
-            mid <- median(d$count[d$Chromosome %in% c(1:22)],na.rm=T)
+            # note that we are only considering bins with any counts for the median depth used in the LogR calculation
+            mid <- median(d$count[d$Chromosome %in% c(1:22) & d$count > 0],na.rm=T)
             d$LogR <- log2(d$count / mid)
+            d$LogR[d$count==0] <- NA
             d
         }
         d <- d[,.get_LogR(.SD),by=sample]
@@ -255,9 +258,10 @@ preprocess_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_ma
     } else {
         ## calculate LogR, first by the normal depth, then by the sample median T/N, but only among the autosomes
         .get_LogR <- function(d) {
-            Ratio <- d$count / d$n_count
-            mid <- median(Ratio[d$Chromosome %in% c(1:22)],na.rm=T)
-            d$LogR <- log2(Ratio / mid)
+            # note that we are only considering bins with any counts for the median depth used in the LogR calculation
+            mid <- median(d$count[d$Chromosome %in% c(1:22) & d$count > 0],na.rm=T)
+            d$LogR <- log2(d$count / mid)
+            d$LogR[d$count==0] <- NA
             d
         }
         d <- d[,.get_LogR(.SD),by=sample]

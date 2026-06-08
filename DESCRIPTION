@@ -1,7 +1,7 @@
 Package: CNAlignR
 Type: Package
 Title: What the package does (short line)
-Version: 0.3
+Version: 0.4
 Date: 2025-06-02
 Author: Alexander Gorelick
 Maintainer: Alexander Gorelick <alexander_gorelick@hms.harvard.edu>
@@ -18,7 +18,10 @@ Depends:
     Rsamtools,
     Biobase,
     here,
-    ASCAT
+    ASCAT,
+    ape,
+    phytools,
+    ggtree
 LinkingTo: Rcpp
 LazyData: false
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.0.0

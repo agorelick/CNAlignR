@@ -6,10 +6,11 @@
 \usage{
 estimate_ccf(
   purity,
-  total_copies,
-  mutant_copies,
+  t_tcn,
+  t_mcn,
   t_alt_count,
   t_depth,
+  n_tcn,
   resolution = 0.001
 )
 }

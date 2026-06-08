@@ -6,6 +6,7 @@
 get_CNAlignR_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf, sample_map, patient, sex, normal_sample, build, data_dir='.', max_phaseable_distance=20000, min_bin_reads_for_baf=10, blacklisted_regions_file=NA, LogR_range_allowed=c(-3.0,3.0), LogR_winsor_percentiles=c(NA,NA), LogR_smooth_bins=NA, normal_correction=F, multipcf_penalty=70, multipcf_refine=F, multipcf_selectAlg='exact', cleanup=T, seed=NA) {
 
     ## load and preprocess data from GLIMPSE2, QDNAseq and snp-pileup
+    #browser()
     preprocessed_data <- preprocess_bin_data(qdnaseq_data=qdnaseq_data,
                                                  pileup_data=pileup_data,
                                                  phased_bcf=phased_bcf,
@@ -55,6 +56,10 @@ get_CNAlignR_obj_for_bin_data <- function(qdnaseq_data, pileup_data, phased_bcf,
                               selectAlg=multipcf_selectAlg,
                               seed=seed)
             
+    
+    ## add genome data to obj for convenience
+    obj$gd <- CNAlignR::genome_data(build)
+    
     if(cleanup==T) {
         message('Cleaning up temporary files.')
         trash <- sapply(c(Tumor_LogR_file,Tumor_BAF_file,Germline_LogR_file,Germline_BAF_file), file.remove)

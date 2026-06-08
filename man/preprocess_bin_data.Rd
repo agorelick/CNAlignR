@@ -18,7 +18,8 @@ preprocess_bin_data(
   LogR_range_allowed,
   LogR_winsor_percentiles,
   LogR_smooth_bins,
-  normal_correction
+  normal_correction,
+  imbalance_alpha = 0.05
 )
 }
 \description{

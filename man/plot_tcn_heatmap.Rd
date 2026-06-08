@@ -4,7 +4,19 @@
 \alias{plot_tcn_heatmap}
 \title{plot_tcn_heatmap}
 \usage{
-plot_tcn_heatmap(segs, fits, groups, group_colors, sex, normal_sample)
+plot_tcn_heatmap(
+  segs,
+  fits,
+  groups,
+  group_colors,
+  sex,
+  build,
+  normal_sample,
+  patient,
+  plot_fractional_tcn = F,
+  rel_widths = c(1.5, 3, 0.5),
+  tree_heat_xspace = 1.15
+)
 }
 \description{
 generate a heatmap with total copy number, a NJ tree based on TCN, and a barplot annotating tumor purity

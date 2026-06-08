@@ -25,7 +25,10 @@ run_CNAlign(
   min_cna_segments_per_sample = 1,
   mcn_weight = 0.5,
   obj2_clonalonly = F,
-  sol_count = 10
+  sol_count = 10,
+  max_tcn_avg_int = 100,
+  tcn_only = F,
+  n_unique_tcn_in_sol = 1
 )
 }
 \description{

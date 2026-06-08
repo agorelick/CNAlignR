@@ -264,6 +264,24 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA, 
     ECDF_fits <- lapply(obj$marker_level_annotated, get_ecdf_per_sample)
     obj$ECDF_fits <- ECDF_fits
 
+    
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # make sure sex chromosomes have plausible BAFs
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    if(sex=='XY') {
+        for(i in 1:length(obj$segment_level)) {
+            obj$segment_level[[i]][Chromosome %in% c('X','Y'),BAF_segmented:=NA]
+        }
+    }
+    
+    if(sex=='XX') {
+        for(i in 1:length(obj$segment_level)) {
+            obj$segment_level[[i]][Chromosome %in% c('Y'),BAF_segmented:=NA]
+            obj$segment_level[[i]][Chromosome %in% c('Y'),LogR_segmented:=NA]
+        }
+    }
+    
     # return the result
     message('Done!')
     obj
