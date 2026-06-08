@@ -132,6 +132,8 @@ In R, the CNAlignR function get_CNAlignR_obj_for_bin_data() will load these inpu
 
 ```r
 # example command to generate input data object for one patient.
+
+# set working directory BEFORE loading the CNAlignR package so that here::here() automatically sets paths correctly
 setwd('TOP DIRECTORY FOR THIS PATIENT')
 library(CNAlignR)
 
