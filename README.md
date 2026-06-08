@@ -131,13 +131,16 @@ For lpWGS data, the input data to CNAlignR is generated with a custom workflow (
 In R, the CNAlignR function get_CNAlignR_obj_for_bin_data() will load these input files and create a data object for use with CNAlignR. The following R script can be used to do this:
 
 ```r
-# example command to generate input data object for one patient.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# example script to generate input data object for one patient using
+# low-pass WGS or polyG-seq data.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # set working directory BEFORE loading the CNAlignR package so that here::here() automatically sets paths correctly
 setwd('TOP DIRECTORY FOR THIS PATIENT')
 library(CNAlignR)
 
-## define input arguments/parameters
+# define input arguments/parameters
 phased_bcf <- 'original_data/SD13_NC2-1_ligated_cleaned.bcf'
 pileup_data <- 'original_data/SD13_NC2-1_ligated_cleaned.pileup.gz'
 qdnaseq_data <- 'original_data/SD13_500kbp_withXYM_hg38.rds'
@@ -149,7 +152,7 @@ normal_sample <- 'NC2-1'     # this should match the normal's "proper_name" in t
 build <- 'hg38'              # hg19/hg38
 seed <- 42
 
-## get CNalign data object for lowpass input data
+# get CNalign data object for lowpass input data
 obj <- get_CNAlignR_obj_for_bin_data(qdnaseq_data=qdnaseq_data,
                                      pileup_data=pileup_data,
                                      phased_bcf=phased_bcf,
@@ -162,12 +165,16 @@ obj <- get_CNAlignR_obj_for_bin_data(qdnaseq_data=qdnaseq_data,
                                      seed=seed
                                      cleanup=F)
 
-## save the CNalign data object 'obj' to file
+# save the CNalign data object 'obj' to file
 saveRDS(obj, file=file.path(data_dir,paste0(patient,'_CNAlignR_obj.rds')))
 
-## plot the LogR data using angular distance (which reflects the TCN with a simple purity-correction)
-## Note: This should NOT be considered the final TCN phylogeny or segmented copy number data,
-## this is for QC of the input data and a basic sense of sample clustering
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# plot the LogR data using angular distance (which reflects the TCN with a simple purity-correction)
+# Note: This should NOT be considered the final TCN phylogeny or segmented copy number data,
+# this is for QC of the input data and a basic sense of sample clustering
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 plot_tcn_angular_distance_heatmap(obj, normal_sample = normal_sample)
 
 ```
