@@ -3,7 +3,7 @@
 ##' Plot a preliminary copy number heatmap based on angular distances from total copy number
 ##'
 ##' @export
-plot_tcn_angular_distance_heatmap <- function(obj=NULL, segs=NULL, build=NULL, sample_groups=NULL, group_colors=NULL, normal_sample, patient='') {
+plot_tcn_angular_distance_heatmap <- function(obj=NULL, segs=NULL, build=NULL, sample_groups=NULL, group_colors=NULL, normal_sample, patient='', squish_tree_factor=1.25) {
     
     if(!is.null(obj)) {
         segs <- rbindlist(obj$segment_level, fill=T)
@@ -118,7 +118,7 @@ plot_tcn_angular_distance_heatmap <- function(obj=NULL, segs=NULL, build=NULL, s
         p1 <- p1 + geom_tiplab()
     }
     
-    p1 <- p1 + xlim(0, 1.15*max(p1$data$x))
+    p1 <- p1 + xlim(0, squish_tree_factor*max(p1$data$x))
     gd2 <- copy(gd)
     chr19_22 <- gd[chr==19,]
     chr19_22$length <- sum(gd[chr %in% c(19,20,21,22),(length)])
