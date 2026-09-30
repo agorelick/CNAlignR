@@ -53,15 +53,17 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA, 
 
     message('Extraploting from the non-NA BAFs to the rest of each chromosome ...')
     BAFs_avail <- BAF_segmented[!is.na(rowMeans(BAF_segmented)),]
-    current_BAFs <- BAFs_avail[1,]
-
-    for(i in 1:nrow(BAF_segmented)) {
-        if(all(is.na(BAF_segmented[i,]))) {
-            ## BAFs are currently NAs, use the last available value
-            BAF_segmented[i,] <- current_BAFs
-        } else {
-            ## BAFs have non-NA values, use these and update the last available value
-            current_BAFs <- BAF_segmented[i,] 
+   
+    if(nrow(BAFs_avail) > 1) {
+        current_BAFs <- BAFs_avail[1,]
+        for(i in 1:nrow(BAF_segmented)) {
+            if(all(is.na(BAF_segmented[i,]))) {
+                ## BAFs are currently NAs, use the last available value
+                BAF_segmented[i,] <- current_BAFs
+            } else {
+                ## BAFs have non-NA values, use these and update the last available value
+                current_BAFs <- BAF_segmented[i,] 
+            }
         }
     }
 
@@ -258,7 +260,11 @@ run_ascat_multipcf <- function(obj, build, penalty, refine, selectAlg, seed=NA, 
         ml[,diff_from_BAF:=(BAF - BAF_segmented)^2]  
         ml[,diff_from_LogR:=(LogR - LogR_segmented)^2]
         LogR_CDF <- ecdf(ml$diff_from_LogR[!is.na(ml$diff_from_LogR)])
-        BAF_CDF <- ecdf(ml$diff_from_BAF[!is.na(ml$diff_from_BAF)])
+        if(sum(!is.na(ml$diff_from_BAF)) >= 30) { 
+            BAF_CDF <- ecdf(ml$diff_from_BAF[!is.na(ml$diff_from_BAF)])
+        } else {
+            BAF_CDF <- NULL
+        }
         list(LogR_CDF=LogR_CDF, BAF_CDF=BAF_CDF)
     }
     ECDF_fits <- lapply(obj$marker_level_annotated, get_ecdf_per_sample)
