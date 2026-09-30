@@ -191,15 +191,15 @@ if(!file.exists(output2_path) | overwrite==T) {
 # do hisens multipcf with small penalty
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-output3_path <- gsub('[.]rds','_mpcf_hisens.rds',output_path)
-if(!file.exists(output3_path) | overwrite==T) { 
-    myseed = ifelse(args$seed!=-1,args$seed,as.numeric(NA))
-    obj3 <- run_ascat_multipcf(obj, build=args$build, penalty=args$penalty_hisens, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
-    obj3$main_params <- list(build=args$build, penalty_hisens=args$penalty_hisens, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
-    saveRDS(obj3, file=output3_path)
-} else {
-    message(output3_path,' already exists. Not overwriting it.')
-}
+#output3_path <- gsub('[.]rds','_mpcf_hisens.rds',output_path)
+#if(!file.exists(output3_path) | overwrite==T) { 
+#    myseed = ifelse(args$seed!=-1,args$seed,as.numeric(NA))
+#    obj3 <- run_ascat_multipcf(obj, build=args$build, penalty=args$penalty_hisens, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
+#    obj3$main_params <- list(build=args$build, penalty_hisens=args$penalty_hisens, seed=myseed, selectAlg=args$selectAlg, refine=args$refine)
+#    saveRDS(obj3, file=output3_path)
+#} else {
+#    message(output3_path,' already exists. Not overwriting it.')
+#}
 
 
 

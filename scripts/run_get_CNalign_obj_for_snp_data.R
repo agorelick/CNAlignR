@@ -1,4 +1,5 @@
 suppressPackageStartupMessages(library("argparse"))
+suppressPackageStartupMessages(library("data.table"))
 
 # create parser object
 parser <- ArgumentParser()
@@ -16,6 +17,9 @@ parser$add_argument("--germlinebaf_file", type="character", help="Germline BAF f
 
 # parse args
 args <- parser$parse_args()
+ascat_dir <- args$ascat_dir
+normal_sample <- args$normal_sample
+output_dir <- args$output_dir
 
 # dynamically get input file names
 ascat_files <- dir(ascat_dir,full.names=T)
@@ -67,9 +71,12 @@ Germline_BAF$Chromosome <- factor(Germline_BAF$Chromosome, levels=c(1:22,'X','Y'
 x_BAF <- rbind(Tumor_BAF, Germline_BAF)
 x_BAF <- data.table::dcast(V1 + Chromosome + Position ~ sample, value.var='value', data=x_BAF)
 x_BAF <- x_BAF[order(Chromosome, Position),]
+x_BAF <- as.data.frame(x_BAF)
+rownames(x_BAF) <- x_BAF$V1
+x_BAF$V1 <- NULL
 
 # subset for positions in both logR and BAF data
-all_samples <- names(x_LogR)[!names(x_LogR) %in% c('V1','Chromosome','Position')]
+all_samples <- names(x_LogR)[!names(x_LogR) %in% c('Chromosome','Position')]
 tumor_samples <- all_samples[!all_samples %in% normal_sample]
 valid_rows <- intersect(rownames(x_BAF), rownames(x_LogR))
 x_LogR <- x_LogR[valid_rows,]
@@ -81,10 +88,10 @@ n_BAF <- x_BAF[,c('Chromosome','Position',normal_sample)]
 
 # save the merged data
 if(!dir.exists(output_dir)) dir.create(output_dir)
-merged_tumorlogr_file <- file.path(output_dir,tumorlogr_file)
-merged_tumorbaf_file <- file.path(output_dir,tumorbaf_file)
-merged_germlinelogr_file <- file.path(output_dir,germlinelogr_file)
-merged_germlinebaf_file <- file.path(output_dir,germlinebaf_file)
+merged_tumorlogr_file <- file.path(output_dir,args$tumorlogr_file)
+merged_tumorbaf_file <- file.path(output_dir,args$tumorbaf_file)
+merged_germlinelogr_file <- file.path(output_dir,args$germlinelogr_file)
+merged_germlinebaf_file <- file.path(output_dir,args$germlinebaf_file)
 write.table(t_LogR, file = merged_tumorlogr_file, sep = "\t", quote = FALSE, col.names = NA)
 write.table(n_LogR, file = merged_germlinelogr_file, sep = "\t", quote = FALSE, col.names = NA)
 write.table(t_BAF, file = merged_tumorbaf_file, sep = "\t", quote = FALSE, col.names = NA)
